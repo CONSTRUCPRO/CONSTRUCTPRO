@@ -1,11 +1,9 @@
-import os
-
-from dotenv import load_dotenv
 from fastapi import FastAPI
 
-load_dotenv()
+from app.api import registrar_routers
+from app.core.config import settings
 
-app = FastAPI(title="CONSTRUCTPRO")
+app = FastAPI(title=settings.APP_NAME)
 
 
 @app.get("/")
@@ -18,5 +16,9 @@ def health():
     return {
         "status": "ok",
         "version": "1.0.0",
-        "environment": os.getenv("APP_ENV", "development"),
+        "environment": settings.APP_ENV,
     }
+
+
+# Registra automáticamente todos los routers de app/api/
+registrar_routers(app)
