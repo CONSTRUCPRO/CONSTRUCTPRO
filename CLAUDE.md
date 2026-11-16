@@ -1,0 +1,463 @@
+# Contexto del proyecto CONSTRUCTPRO (para el asistente de Alejandro)
+
+> Este documento lo preparó el asistente de Jaime para que ambos asistentes trabajen con
+> las mismas decisiones. Si algo aquí contradice lo que ves en el repositorio, el
+> repositorio manda: avísale a tu usuario y verifica antes de actuar.
+
+## 1. Proyecto y equipo
+
+- **Proyecto:** ConstruPro: API REST (FastAPI) para gestionar el abastecimiento de materiales
+  de obras de construcción. Asignatura Web Services, UTS, docente Edward Villamizar.
+- **Equipo:** Jaime Almeida (GitHub `JM-WATF`) y Diego Alejandro Ayala (GitHub `Alejandro2223`).
+- **Repositorio:** `CONSTRUCPRO/CONSTRUCTPRO` (organización CONSTRUCPRO).
+- **Fuentes de verdad, en este orden:**
+  1. Los issues de GitHub de cada historia de usuario (HU): endpoints, JSON esperado,
+     casos de prueba y Definición de Hecho.
+  2. El documento del parcial "ConstruPro": reglas de negocio RN-001 a RN-140 (Componente E),
+     catálogo de códigos de error (Tabla 57) y sobre JSON estándar (Componente F).
+  3. Las guías del profesor. La guía **setup-entorno** define la estructura del proyecto.
+     Las guías del **taller FastAPI** (carpetas en la raíz, datos en memoria) eran un ejercicio
+     de aprendizaje y **no** son la estructura del proyecto.
+
+## 2. Reparto de historias de usuario (Sprint 1)
+
+| Jaime (JM-WATF) | Alejandro (Alejandro2223) |
+|---|---|
+| #3 HU-03 Roles y Permisos | #6 HU-09 Catálogo de Materiales |
+| #2 HU-01 Gestión de Usuarios | #7 HU-10 Gestión de Proveedores |
+| #1 HU-02 Autenticación con Token | #8 HU-11 Relación Material–Proveedor |
+| #4 HU-05 Gestión de Proyectos | #9 HU-12 Registro de Solicitud de Materiales |
+| #5 HU-06 Presupuesto del Proyecto | #10 HU-16 Comparativo de Precios |
+| #12 HU-20 Decisión de Aprobación | #11 HU-17 Generación de Cotización |
+| #13 HU-21 Generación de Orden de Compra | #14 HU-23 Registro y Control de Pagos |
+| | #15 HU-29 Entradas y Salidas de Inventario |
+
+Orden de trabajo de Jaime: base común → HU-03 → HU-01 → HU-02 → HU-05 → HU-06 → HU-20 → HU-21.
+
+**Dependencias cruzadas (hay que coordinarlas):**
+- HU-12 (solicitudes, Alejandro) necesita **proyectos** (HU-05, Jaime) para RN-041 (proyecto activo).
+- HU-20 (aprobación, Jaime) necesita **cotizaciones** (HU-17, Alejandro).
+- HU-21 (orden de compra, Jaime) necesita **proveedores** (HU-10, Alejandro) para RN-039.
+- HU-23 (pagos, Alejandro) necesita **órdenes de compra** (HU-21, Jaime).
+- Todas las HU usan la **base común** (sección 5) y, al final, la autenticación de HU-02.
+
+## 3. Ramas y flujo de trabajo (obligatorio)
+
+- `main`: solo la versión entregable. Nunca se trabaja ni se hace push directo ahí.
+- `development`: integración. **No se hace push directo**: todo entra por pull request.
+- `testing` / `staging`: etapas posteriores, todavía no se usan.
+- Una rama por HU, que sale de `development` actualizado:
+  `feature/hu-XX-nombre-corto` (ej.: `feature/hu-09-materiales`).
+
+Ciclo de cada HU:
+1. `git checkout development` + `git pull` → `git checkout -b feature/hu-XX-...`
+2. Programar con commits pequeños y claros, en español.
+3. `git push -u origin feature/hu-XX-...` → abrir el PR hacia `development` con "Refs #N" en la descripción.
+4. El **otro integrante** revisa y hace el merge.
+5. El otro integrante **prueba manualmente** en `/docs` (Swagger), con pantallazos, siguiendo los
+   "Casos de Prueba Funcional" del issue.
+
+Columnas del tablero (GitHub Project): Todo → In Progress (rama creada) → Gestión de integración
+(PR abierto, en revisión o merge) → Testing (el compañero prueba) → Done. Las tarjetas se mueven a mano.
+
+Forma de trabajo de Jaime con su asistente: el asistente **no escribe en el repo**. Le pasa el
+código y los comandos explicados, y Jaime los copia, pega y ejecuta. Respeta la preferencia de tu propio usuario.
+
+## 4. Arquitectura acordada
+
+Stack: Python, FastAPI, Pydantic v2, SQLAlchemy 2.x, **SQLite** (`DATABASE_URL` en `.env`), Alembic, Uvicorn.
+
+```
+main.py                    # crea la app; registra routers automáticamente
+app/
+  core/                    # config.py (settings), database.py (engine, SessionLocal, Base, get_db)
+  api/                     # routers: <modulo>_router.py con una variable `router`
+  schemas/                 # Pydantic: <modulo>.py con XxxCreate / XxxUpdate / XxxResponse
+  services/                # casos de uso: <modulo>_service.py (sin FastAPI, sin HTTP)
+  repositories/            # acceso a datos con Session de SQLAlchemy: <modulo>_repository.py
+  domain/                  # modelos SQLAlchemy (heredan de Base) + reglas de negocio + excepciones
+alembic/                   # migraciones; env.py importa solo todos los módulos de app/domain/
+```
+
+Reglas de la arquitectura:
+- **Registro automático de routers:** `app/api/__init__.py` importa todos los módulos de `app/api/`
+  y registra los que tengan una variable `router`. **No se toca `main.py`** para agregar módulos.
+- **Modelos y Alembic:** cada modelo SQLAlchemy va en `app/domain/<modulo>.py` y hereda de
+  `app.core.database.Base`. Alembic los detecta solo.
+- **Las reglas de negocio (RN-xxx) viven en el dominio** (métodos de la entidad o funciones de dominio)
+  y se disparan desde el servicio. El router no decide nada, y el repositorio no valida reglas.
+- **El servicio no importa FastAPI ni lanza HTTPException.** Lanza excepciones de dominio
+  (sección 5) y la capa API las traduce a HTTP.
+- **Rutas:** prefijo `/api/v1/<recurso>` en plural y kebab-case (`/api/v1/ordenes-compra`), tal como
+  aparecen en cada issue.
+- **Convenciones JSON (Componente F):** campos en snake_case y en español, ids devueltos como
+  **texto** con sufijo `_id` (`material_id`, no `id`), fechas ISO 8601 UTC, dinero con 2 decimales
+  más el campo `moneda: "COP"`, campos vacíos como `null` (no se omiten), colecciones siempre como
+  arreglo y paginación en `meta.paginacion`.
+- **Nunca se suben** `.env`, `dev.db`, `venv/` ni `__pycache__/` (ya están en `.gitignore`).
+
+## 5. Base común (la está haciendo Jaime en `feature/base-comun`)
+
+Todas las HU la usan. **No crear versiones propias de esto.** Cuando el PR esté en `development`,
+importar desde ahí. Si el nombre exacto de una función cambia, manda el código del repo.
+
+- `app/domain/excepciones.py`: conserva los nombres y el orden de parámetros de las excepciones de
+  Alejandro y agrega las que faltaban. **El servicio y el dominio lanzan estas excepciones; nunca HTTPException.**
+
+  | Excepción | HTTP | Código por defecto | Firma |
+  |---|---|---|---|
+  | `ReglaNegocioError` | 422 | `NEG_REGLA_INCUMPLIDA` | `(regla, mensaje, campo=None, codigo=None, mensaje_general=None)` |
+  | `RecursoNoEncontradoError` | 404 | `REC_NO_ENCONTRADO` | `(mensaje, campo=None)` |
+  | `RecursoDuplicadoError` | 409 | `REC_DUPLICADO` | `(regla, mensaje, campo=None)` |
+  | `ConflictoEstadoError` | 409 | `NEG_CONFLICTO_ESTADO` | `(regla, mensaje, campo=None, codigo=None, mensaje_general=None)` |
+  | `PermisoDenegadoError` | 403 | `AUT_SIN_PERMISO` | `(mensaje, regla=None, campo="rol", codigo=None)` |
+  | `NoAutenticadoError` | 401 | `AUT_CREDENCIALES_INVALIDAS` | `(mensaje, campo=None, codigo=None)` |
+
+  Con `codigo=` se usa un código específico del catálogo, por ejemplo
+  `ReglaNegocioError("RN-122", "...", codigo="NEG_STOCK_INSUFICIENTE")`. El mensaje general sale solo
+  de `CATALOGO_MENSAJES` (Tabla 57). `NEG_REGLA_INCUMPLIDA` y `NEG_CONFLICTO_ESTADO` son genéricos,
+  agregados para las reglas que no tienen un código propio.
+- `app/core/respuestas.py`: `respuesta_exitosa(datos=None, mensaje="...", paginacion=None)` arma el
+  sobre `{exito, codigo, mensaje, datos, errores, meta{timestamp, version, peticion_id, paginacion}}`.
+  `construir_paginacion(pagina, por_pagina, total_registros)` arma `meta.paginacion`.
+  `fecha_iso(valor)` formatea fechas: datetime → `"2026-09-14T15:04:32Z"`, date → `"2026-09-14"`, None → None.
+- `app/schemas/respuesta.py`: `Respuesta[T]`, el modelo Pydantic genérico del sobre, para Swagger.
+  Se usa así: `@router.post("", response_model=Respuesta[MaterialResponse], status_code=201)` y
+  `response_model=Respuesta[list[MaterialResponse]]`.
+- `app/core/errores.py`: `registrar_manejadores(app)`, que se llama una vez en `main.py`. Convierte en sobre
+  estándar las excepciones de negocio, la validación de Pydantic (422 `VAL_CAMPO_REQUERIDO` o
+  `VAL_FORMATO_INVALIDO`, y 400 si el JSON viene mal formado; si un validador lanza
+  `ValueError("mensaje en español")`, ese texto llega al cliente), los 404 de ruta y los errores inesperados
+  (500 `ERR_INTERNO`, con el detalle solo en el log junto al `peticion_id`). También pone el encabezado
+  `X-Peticion-Id`. **Los routers no llevan try/except**: llaman al servicio y devuelven `respuesta_exitosa(...)`.
+- `app/core/seguridad.py`: `obtener_usuario_actual` devuelve un `UsuarioActual(usuario_id, rol)`.
+  `requiere_rol("Administrador", regla="RN-014")` crea una dependencia que responde 403 si el rol no coincide.
+  **Es temporal hasta la HU-02**: lee los encabezados `X-Rol` (obligatorio) y `X-Usuario-Id`, que se llenan
+  en Swagger. Con la HU-02 solo cambia por dentro (JWT), y los endpoints no se tocan.
+
+  ```python
+  @router.post("", response_model=Respuesta[MaterialResponse], status_code=201)
+  def crear_material(datos: MaterialCreate,
+                     db: Session = Depends(get_db),
+                     usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+      material = MaterialService(MaterialRepository(db)).crear(datos)
+      return respuesta_exitosa(material, "Material registrado correctamente.")
+  ```
+
+**Migraciones de Alembic, para no chocar:** antes de generar una migración, hacer pull de
+`development`. Si al integrar quedan dos "heads" (`alembic heads` muestra dos), se resuelve con
+`alembic merge heads -m "merge"`. Cada PR incluye su propia migración.
+
+## 6. Estado actual del código de materiales (revisado el 16-11-2026)
+
+En `development` están `api/material_router.py`, `service/material_service.py`, `domain/material.py`,
+`domain/excepciones.py` y `repository/material_repository.py`, **en la raíz** y con datos **en memoria**,
+siguiendo la guía del taller. Funcionan entre sí, pero:
+1. La ruta `/api/v1/materiales` **no queda registrada** en la app, porque el autoregistro solo mira
+   `app/api/`.
+2. Los datos están en memoria. Las HU exigen base de datos (Alembic y SQLAlchemy ya están configurados).
+3. Las respuestas no usan el sobre estándar, y el id sale como `id` en vez de `material_id`.
+4. Esos commits entraron directo a `development`, sin PR.
+
+**Tarea sugerida para HU-09** (rama `feature/hu-09-materiales`, después de que se integre la base común):
+- Modelos `Categoria` y `Material` (SQLAlchemy) en `app/domain/material.py`, con las reglas
+  RN-031 a RN-035 que ya están escritas.
+- Schemas Pydantic en `app/schemas/material.py`.
+- Repositorio con Session en `app/repositories/material_repository.py`.
+- Servicio en `app/services/material_service.py`.
+- Router en `app/api/material_router.py`, usando el sobre y las excepciones de la base común.
+- Migración de Alembic.
+- Borrar las carpetas raíz `api/`, `service/`, `domain/` y `repository/` en ese mismo PR.
+
+## 7. Al empezar cada sesión
+
+1. `git checkout development` + `git pull` para ver lo que integró el compañero.
+2. Revisar los PR abiertos: el compañero puede estar esperando una revisión.
+3. Leer el issue de la HU antes de programar.
+
+## 8. Patrón de referencia: así se escribe TODO módulo
+
+Es un módulo de ejemplo ("Herramienta"), probado de punta a punta con la base común: migración de
+Alembic, 201, 409, 422, 403, 404, 204 y paginación. **No existe en el proyecto.** Es la plantilla:
+cada HU replica esta forma, con sus propias entidades, reglas RN-xxx, códigos y rutas del issue.
+Los RN-XXX/YYY/ZZZ del ejemplo son marcadores.
+
+Puntos clave del patrón:
+- La entidad SQLAlchemy contiene sus reglas como métodos (`validar_precio`, `actualizar_precio`).
+- El esquema de salida tiene `desde_modelo(...)`, que convierte la entidad: id → `xxx_id` como texto,
+  Decimal → float, fechas con `fecha_iso`, y agrega `moneda`.
+- El repositorio recibe la `Session` y no valida reglas. `listar` devuelve `(items, total)` para paginar en la BD.
+- El servicio recibe el repositorio, valida y orquesta, y devuelve esquemas de salida. Solo lanza excepciones de dominio.
+- El router crea el servicio con `Depends(obtener_servicio)`, protege con `obtener_usuario_actual` o
+  `requiere_rol(...)` y devuelve `respuesta_exitosa(...)`. Sin try/except.
+- Dinero: `Numeric(14, 2)` en la BD. Fechas: `DateTime` guardado en UTC.
+- Migración: `alembic revision --autogenerate -m "crea tabla xxx"` y luego `alembic upgrade head`.
+  Revisar el archivo generado en `alembic/versions/` antes de hacer commit.
+
+### `app/domain/herramienta.py`
+
+```python
+# app/domain/herramienta.py
+# CAPA DOMINIO: la entidad (tabla) y SUS reglas de negocio.
+# No importa FastAPI. Las reglas lanzan excepciones de app.domain.excepciones.
+from datetime import datetime, timezone
+from decimal import Decimal
+
+from sqlalchemy import DateTime, Numeric, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.database import Base
+from app.domain.excepciones import ConflictoEstadoError, ReglaNegocioError
+
+
+class Herramienta(Base):
+    __tablename__ = "herramientas"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(120), unique=True)
+    precio_referencia: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    estado: Mapped[str] = mapped_column(String(20), default="activo")
+    fecha_registro: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+
+    # ── Reglas de negocio de la entidad ───────────────────
+    @staticmethod
+    def validar_precio(precio: float) -> None:
+        if precio <= 0:  # RN-XXX
+            raise ReglaNegocioError("RN-XXX", "El precio de referencia debe ser mayor que cero.",
+                                    campo="precio_referencia")
+
+    def actualizar_precio(self, nuevo: float) -> None:
+        if self.estado == "inactivo":
+            raise ConflictoEstadoError("RN-YYY", "No se puede modificar una herramienta inactiva.",
+                                       campo="estado")
+        self.validar_precio(nuevo)
+        self.precio_referencia = Decimal(str(round(nuevo, 2)))
+
+    def inactivar(self) -> None:
+        self.estado = "inactivo"
+```
+
+### `app/schemas/herramienta.py`
+
+```python
+# app/schemas/herramienta.py
+# Esquemas Pydantic: validan la ENTRADA y definen la forma de la SALIDA (datos del sobre).
+from typing import Optional
+
+from pydantic import BaseModel, Field, field_validator
+
+from app.core.respuestas import fecha_iso
+from app.domain.herramienta import Herramienta
+
+
+class HerramientaCreate(BaseModel):
+    nombre: str = Field(..., min_length=2, max_length=120)
+    precio_referencia: float
+
+    @field_validator("nombre")
+    @classmethod
+    def limpiar_nombre(cls, v: str) -> str:
+        return v.strip()
+
+
+class PrecioUpdate(BaseModel):
+    precio_referencia: float
+
+
+class HerramientaResponse(BaseModel):
+    herramienta_id: str          # ids SIEMPRE como texto y con sufijo _id
+    nombre: str
+    precio_referencia: float
+    moneda: str = "COP"          # dinero SIEMPRE acompañado de la moneda
+    estado: str
+    fecha_registro: Optional[str]  # ISO 8601 UTC
+
+    @classmethod
+    def desde_modelo(cls, h: Herramienta) -> "HerramientaResponse":
+        return cls(
+            herramienta_id=str(h.id),
+            nombre=h.nombre,
+            precio_referencia=float(h.precio_referencia),
+            estado=h.estado,
+            fecha_registro=fecha_iso(h.fecha_registro),
+        )
+```
+
+### `app/repositories/herramienta_repository.py`
+
+```python
+# app/repositories/herramienta_repository.py
+# CAPA REPOSITORIO: solo guarda y consulta. Sin reglas de negocio, sin HTTP.
+from typing import Optional
+
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from app.domain.herramienta import Herramienta
+
+
+class HerramientaRepository:
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def obtener_por_id(self, herramienta_id: int) -> Optional[Herramienta]:
+        return self.db.get(Herramienta, herramienta_id)
+
+    def existe_nombre(self, nombre: str, excluir_id: Optional[int] = None) -> bool:
+        consulta = select(Herramienta.id).where(func.lower(Herramienta.nombre) == nombre.lower())
+        if excluir_id is not None:
+            consulta = consulta.where(Herramienta.id != excluir_id)
+        return self.db.scalar(consulta) is not None
+
+    def listar(self, estado: Optional[str], nombre: Optional[str],
+               pagina: int, por_pagina: int) -> tuple[list[Herramienta], int]:
+        consulta = select(Herramienta)
+        if estado:
+            consulta = consulta.where(Herramienta.estado == estado)
+        if nombre:
+            consulta = consulta.where(Herramienta.nombre.ilike(f"%{nombre}%"))
+        total = self.db.scalar(select(func.count()).select_from(consulta.subquery()))
+        items = self.db.scalars(
+            consulta.order_by(Herramienta.id).offset((pagina - 1) * por_pagina).limit(por_pagina)
+        ).all()
+        return list(items), total
+
+    def guardar(self, herramienta: Herramienta) -> Herramienta:
+        self.db.add(herramienta)
+        self.db.commit()
+        self.db.refresh(herramienta)
+        return herramienta
+```
+
+### `app/services/herramienta_service.py`
+
+```python
+# app/services/herramienta_service.py
+# CAPA SERVICIO: orquesta los casos de uso. No importa FastAPI ni lanza HTTPException:
+# lanza excepciones de dominio y la capa API (app/core/errores.py) las traduce.
+from typing import Optional
+
+from app.core.respuestas import construir_paginacion
+from app.domain.excepciones import RecursoDuplicadoError, RecursoNoEncontradoError
+from app.domain.herramienta import Herramienta
+from app.repositories.herramienta_repository import HerramientaRepository
+from app.schemas.herramienta import HerramientaCreate, HerramientaResponse, PrecioUpdate
+
+
+class HerramientaService:
+
+    def __init__(self, repo: HerramientaRepository):
+        self.repo = repo  # inyección de dependencia
+
+    def _buscar(self, herramienta_id: int) -> Herramienta:
+        h = self.repo.obtener_por_id(herramienta_id)
+        if not h:
+            raise RecursoNoEncontradoError(
+                f"No existe una herramienta con el identificador {herramienta_id}.",
+                campo="herramienta_id")
+        return h
+
+    def crear(self, datos: HerramientaCreate) -> HerramientaResponse:
+        if self.repo.existe_nombre(datos.nombre):
+            raise RecursoDuplicadoError("RN-ZZZ", f"Ya existe la herramienta '{datos.nombre}'.",
+                                        campo="nombre")
+        Herramienta.validar_precio(datos.precio_referencia)        # regla del dominio
+        h = Herramienta(nombre=datos.nombre, precio_referencia=datos.precio_referencia)
+        return HerramientaResponse.desde_modelo(self.repo.guardar(h))
+
+    def obtener(self, herramienta_id: int) -> HerramientaResponse:
+        return HerramientaResponse.desde_modelo(self._buscar(herramienta_id))
+
+    def listar(self, estado: Optional[str], nombre: Optional[str],
+               pagina: int, por_pagina: int) -> tuple[list[HerramientaResponse], dict]:
+        items, total = self.repo.listar(estado, nombre, pagina, por_pagina)
+        return ([HerramientaResponse.desde_modelo(h) for h in items],
+                construir_paginacion(pagina, por_pagina, total))
+
+    def actualizar_precio(self, herramienta_id: int, datos: PrecioUpdate) -> HerramientaResponse:
+        h = self._buscar(herramienta_id)
+        h.actualizar_precio(datos.precio_referencia)              # regla del dominio
+        return HerramientaResponse.desde_modelo(self.repo.guardar(h))
+
+    def inactivar(self, herramienta_id: int) -> None:
+        h = self._buscar(herramienta_id)
+        h.inactivar()
+        self.repo.guardar(h)
+```
+
+### `app/api/herramienta_router.py`
+
+```python
+# app/api/herramienta_router.py
+# CAPA API: recibe la petición, llama al servicio y devuelve el sobre estándar.
+# Sin try/except (los errores los convierte app/core/errores.py) y sin lógica de negocio.
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Query, Response, status
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.core.respuestas import respuesta_exitosa
+from app.core.seguridad import UsuarioActual, obtener_usuario_actual, requiere_rol
+from app.repositories.herramienta_repository import HerramientaRepository
+from app.schemas.herramienta import HerramientaCreate, HerramientaResponse, PrecioUpdate
+from app.schemas.respuesta import Respuesta
+from app.services.herramienta_service import HerramientaService
+
+router = APIRouter(prefix="/api/v1/herramientas", tags=["Herramientas"])
+
+
+def obtener_servicio(db: Session = Depends(get_db)) -> HerramientaService:
+    return HerramientaService(HerramientaRepository(db))
+
+
+@router.post("", response_model=Respuesta[HerramientaResponse],
+             status_code=status.HTTP_201_CREATED,
+             summary="Registrar herramienta")
+def crear(datos: HerramientaCreate,
+          servicio: HerramientaService = Depends(obtener_servicio),
+          usuario: UsuarioActual = Depends(requiere_rol("Administrador", "Coordinador"))):
+    return respuesta_exitosa(servicio.crear(datos), "Herramienta registrada correctamente.")
+
+
+@router.get("", response_model=Respuesta[list[HerramientaResponse]],
+            summary="Consultar herramientas (paginado)")
+def listar(estado: Optional[str] = None,
+           nombre: Optional[str] = None,
+           pagina: int = Query(1, ge=1),
+           por_pagina: int = Query(10, ge=1, le=100),
+           servicio: HerramientaService = Depends(obtener_servicio),
+           usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+    items, paginacion = servicio.listar(estado, nombre, pagina, por_pagina)
+    return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
+
+
+@router.get("/{herramienta_id}", response_model=Respuesta[HerramientaResponse],
+            summary="Detalle de una herramienta")
+def obtener(herramienta_id: int,
+            servicio: HerramientaService = Depends(obtener_servicio),
+            usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+    return respuesta_exitosa(servicio.obtener(herramienta_id), "Consulta realizada correctamente.")
+
+
+@router.patch("/{herramienta_id}/precio", response_model=Respuesta[HerramientaResponse],
+              summary="Actualizar precio de referencia")
+def actualizar_precio(herramienta_id: int, datos: PrecioUpdate,
+                      servicio: HerramientaService = Depends(obtener_servicio),
+                      usuario: UsuarioActual = Depends(requiere_rol("Administrador", "Coordinador"))):
+    return respuesta_exitosa(servicio.actualizar_precio(herramienta_id, datos),
+                             "Precio actualizado correctamente.")
+
+
+@router.patch("/{herramienta_id}/inactivar", status_code=status.HTTP_204_NO_CONTENT,
+              summary="Inactivar herramienta")
+def inactivar(herramienta_id: int,
+              servicio: HerramientaService = Depends(obtener_servicio),
+              usuario: UsuarioActual = Depends(requiere_rol("Administrador"))):
+    servicio.inactivar(herramienta_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+```
+

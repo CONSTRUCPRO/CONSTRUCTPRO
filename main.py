@@ -2,8 +2,14 @@ from fastapi import FastAPI
 
 from app.api import registrar_routers
 from app.core.config import settings
+from app.core.errores import registrar_manejadores
+
 
 app = FastAPI(title=settings.APP_NAME)
+
+# Convierte todos los errores al sobre JSON estándar de ConstruPro
+registrar_manejadores(app)
+
 
 
 @app.get("/")
