@@ -56,3 +56,30 @@ def requiere_rol(*roles_permitidos: str, regla: Optional[str] = None):
         return usuario
 
     return verificador
+
+
+
+def requiere_permiso(modulo: str, accion: str):
+    """
+    HU-03 / FUN-009: deja pasar solo si el rol del usuario tiene el permiso
+    (modulo, accion) registrado en la tabla permisos_rol. Si no, 403 AUT_SIN_PERMISO.
+
+    Uso en un router:
+        usuario: UsuarioActual = Depends(requiere_permiso("Solicitudes", "crear"))
+    """
+    # Importes locales para no crear dependencias circulares al arrancar la app.
+    from sqlalchemy.orm import Session
+
+    from app.core.database import get_db
+    from app.repositories.rol_repository import RolRepository
+    from app.services.rol_service import RolService
+
+    def verificador(usuario: UsuarioActual = Depends(obtener_usuario_actual),
+                    db: Session = Depends(get_db)) -> UsuarioActual:
+        if not RolService(RolRepository(db)).rol_tiene_permiso(usuario.rol, modulo, accion):
+            raise PermisoDenegadoError(
+                f"El rol {usuario.rol} no tiene permiso para '{accion}' en el módulo {modulo}."
+            )
+        return usuario
+
+    return verificador
