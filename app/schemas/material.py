@@ -18,7 +18,7 @@ class MaterialCreate(BaseModel):
     model_config = ConfigDict(json_schema_extra={"example": {
         "nombre": "Cemento gris tipo I 50 kg",
         "unidad": "bulto",
-        "categoria_id": 1,
+        "categoria_id": 4,
         "precio_referencia": 28500.00,
     }})
 
