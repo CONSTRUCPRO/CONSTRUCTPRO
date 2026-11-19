@@ -72,11 +72,21 @@ class Rol(Base):
         for modulo, accion in sorted(nuevos - actuales):
             self.permisos.append(PermisoRol(modulo=modulo, accion=accion))
 
-    def cambiar_estado(self, nuevo_estado: str) -> None:
-        """RN-015: los roles coordinador y director (y administrador) no se pueden inactivar."""
+    def cambiar_estado(self, nuevo_estado: str, usuarios_activos: int = 0) -> None:
+        """
+        RN-015: los roles coordinador y director (y administrador) no se pueden inactivar.
+        RN-012: un rol con usuarios asignados no puede eliminarse. Como los roles no se
+                borran sino que se inactivan, no se permite inactivar un rol que tenga
+                usuarios activos.
+        """
         if nuevo_estado == "inactivo" and self.es_protegido():
             raise ConflictoEstadoError(
                 "RN-015", f"El rol {self.nombre} es obligatorio del sistema y no puede inactivarse.",
+                campo="estado")
+        if nuevo_estado == "inactivo" and usuarios_activos > 0:
+            raise ConflictoEstadoError(
+                "RN-012", f"El rol {self.nombre} tiene {usuarios_activos} usuario(s) activo(s) "
+                          f"asignado(s) y no puede inactivarse.",
                 campo="estado")
         self.estado = nuevo_estado
 
