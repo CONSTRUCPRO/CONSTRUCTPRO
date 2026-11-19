@@ -64,7 +64,8 @@ class RolService:
 
     def cambiar_estado(self, rol_id: int, datos: EstadoRolUpdate) -> RolResponse:
         rol = self._buscar(rol_id)
-        rol.cambiar_estado(datos.estado)                     # RN-015
+        usuarios_activos = self.repo.contar_usuarios_activos(rol_id)
+        rol.cambiar_estado(datos.estado, usuarios_activos)   # RN-015, RN-012
         return RolResponse.desde_modelo(self.repo.guardar(rol))
 
     # Usado por app/core/seguridad.py -> requiere_permiso(...) (FUN-009)
