@@ -84,6 +84,7 @@ def consultar_permisos(rol_id: int,
 def cambiar_estado(rol_id: int, datos: EstadoRolUpdate,
                    servicio: RolService = Depends(obtener_servicio),
                    usuario: UsuarioActual = Depends(solo_administrador)):
-    """Coordinador, Director y Administrador no se pueden inactivar (RN-015)."""
+    """Coordinador, Director y Administrador no se pueden inactivar (RN-015).
+    Tampoco un rol que tenga usuarios activos asignados (RN-012)."""
     return respuesta_exitosa(servicio.cambiar_estado(rol_id, datos),
                              "Estado del rol actualizado correctamente.")
