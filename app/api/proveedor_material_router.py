@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
-from app.core.seguridad import UsuarioActual, obtener_usuario_actual, requiere_rol
+from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.proveedor_material_repository import ProveedorMaterialRepository
 from app.schemas.proveedor_material import (
     OfertaCreate,
@@ -21,8 +21,9 @@ from app.services.proveedor_material_service import ProveedorMaterialService
 
 router = APIRouter(tags=["Relación Material–Proveedor"])
 
-# Roles que pueden asociar materiales; consultar lo puede hacer cualquier usuario identificado.
-ROLES_OFERTAS = ("Administrador", "Coordinador")
+# Las ofertas pertenecen al módulo "Materiales" (MODULO-03), así que usan sus permisos.
+# Con los roles por defecto: Administrador y Coordinador asocian materiales; todos consultan.
+MODULO = "Materiales"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> ProveedorMaterialService:
@@ -47,12 +48,13 @@ def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
     }
 
 
-ERROR_401 = _ejemplo_error("Falta identificarse (encabezado X-Rol, temporal hasta la HU-02)",
+ERROR_401 = _ejemplo_error("Sin token, token vencido o sesión cerrada (HU-02)",
                            "AUT_CREDENCIALES_INVALIDAS", "El correo o la contraseña no son correctos.",
-                           None, "Debe identificarse para usar este servicio.", None)
-ERROR_403 = _ejemplo_error("El rol no tiene permiso", "AUT_SIN_PERMISO",
-                           "Su rol no le permite realizar esta operación.",
-                           "rol", "El rol Empleado no puede realizar esta operación.", None)
+                           None, "Debe iniciar sesión y enviar el token en el encabezado Authorization: Bearer <token>.", None)
+ERROR_403 = _ejemplo_error("El rol no tiene el permiso en el módulo Materiales", "AUT_SIN_PERMISO",
+                           "Su rol no le permite realizar esta operación.", "rol",
+                           "El rol Empleado no tiene permiso para 'crear' en el módulo Materiales.",
+                           None)
 ERROR_404_PROVEEDOR = _ejemplo_error("El proveedor o el material no existe", "REC_NO_ENCONTRADO",
                                      "El recurso solicitado no existe.", "proveedor_id",
                                      "No existe un proveedor con el identificador 8.", None)
@@ -86,7 +88,7 @@ ERROR_422_PRECIO = _ejemplo_error(
                         409: ERROR_409_INACTIVO, 422: ERROR_422_PRECIO})
 def asociar_material(proveedor_id: int, datos: OfertaCreate, response: Response,
                      servicio: ProveedorMaterialService = Depends(obtener_servicio),
-                     usuario: UsuarioActual = Depends(requiere_rol(*ROLES_OFERTAS))):
+                     usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
     oferta, creada = servicio.asociar(proveedor_id, datos)
     if creada:
         return respuesta_exitosa(oferta, "Oferta registrada correctamente.")
@@ -100,12 +102,12 @@ def asociar_material(proveedor_id: int, datos: OfertaCreate, response: Response,
             description="Devuelve los proveedores **activos** que ofrecen el material, con su "
                         "precio, disponibilidad y días de entrega. Es la base del comparativo "
                         "de precios (HU-16). La paginación va en `meta.paginacion`.",
-            responses={401: ERROR_401, 404: ERROR_404_MATERIAL})
+            responses={401: ERROR_401, 403: ERROR_403, 404: ERROR_404_MATERIAL})
 def proveedores_de_material(
         material_id: int,
         pagina: int = Query(1, ge=1, description="Número de página"),
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: ProveedorMaterialService = Depends(obtener_servicio),
-        usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+        usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
     items, paginacion = servicio.proveedores_de_material(material_id, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
