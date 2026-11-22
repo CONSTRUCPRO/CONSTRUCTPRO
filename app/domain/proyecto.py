@@ -17,6 +17,7 @@
 # Reglas que usarán otras HU (no reimplementarlas, llamar a verificar_admite_solicitudes):
 #   RN-041  Un proyecto suspendido o finalizado no puede generar solicitudes (HU-12).
 #   RN-020  Todo proyecto debe registrar su ubicación antes de generar solicitudes (HU-12).
+#   RN-021  Todo proyecto debe tener presupuesto asignado antes de generar solicitudes (HU-12).
 from datetime import date, datetime, timezone
 from typing import Optional
 
@@ -25,6 +26,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.domain.excepciones import ConflictoEstadoError, ReglaNegocioError
+from app.domain.presupuesto import Presupuesto
 from app.domain.usuario import Usuario
 
 ESTADO_ACTIVO = "activo"
@@ -65,6 +67,8 @@ class Proyecto(Base):
     )
 
     responsable: Mapped[Usuario] = relationship()
+    # HU-06: un proyecto tiene como máximo un presupuesto (None mientras no se asigne)
+    presupuesto: Mapped[Optional[Presupuesto]] = relationship(back_populates="proyecto")
 
     # ── Reglas de negocio ─────────────────────────────────
 
@@ -166,6 +170,7 @@ class Proyecto(Base):
         Para la HU-12 (solicitudes de materiales). Llamarlo antes de crear una solicitud.
         RN-041: solo un proyecto activo admite solicitudes (422 NEG_PROYECTO_NO_ACTIVO).
         RN-020: el proyecto debe tener registrada su ubicación.
+        RN-021: el proyecto debe tener presupuesto asignado (HU-06).
         """
         if self.estado != ESTADO_ACTIVO:
             raise ReglaNegocioError(
@@ -174,4 +179,8 @@ class Proyecto(Base):
         if not self.tiene_ubicacion():
             raise ReglaNegocioError(
                 "RN-020", f"El proyecto '{self.nombre}' debe tener registrada su ubicación antes "
+                          f"de generar solicitudes.", campo="proyecto_id")
+        if self.presupuesto is None:
+            raise ReglaNegocioError(
+                "RN-021", f"El proyecto '{self.nombre}' debe tener presupuesto asignado antes "
                           f"de generar solicitudes.", campo="proyecto_id")
