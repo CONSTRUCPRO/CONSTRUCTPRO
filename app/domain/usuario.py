@@ -13,7 +13,11 @@
 #   RN-009  Al inactivar un usuario se invalidan sus sesiones: se incrementa
 #           version_sesion. La HU-02 guardará ese número dentro del token y
 #           rechazará los tokens que tengan una versión anterior.
-from datetime import datetime, timezone
+#
+# Reglas de la HU-02 (inicio de sesión):
+#   RN-006  Un usuario inactivo no puede iniciar sesión ni operar (401 AUT_USUARIO_INACTIVO).
+#   RN-007  La cuenta se bloquea temporalmente tras cinco intentos fallidos consecutivos.
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
@@ -21,7 +25,7 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
-from app.domain.excepciones import ConflictoEstadoError, ReglaNegocioError
+from app.domain.excepciones import ConflictoEstadoError, NoAutenticadoError, ReglaNegocioError
 from app.domain.rol import Rol
 
 ESTADO_ACTIVO = "activo"
@@ -33,6 +37,11 @@ TIPOS_DOCUMENTO = ("CC", "CE", "TI", "PA", "NIT")
 
 def _ahora_utc() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def ahora_utc_sin_zona() -> datetime:
+    """Hora UTC sin zona horaria: así la guarda y la devuelve SQLite, y se pueden comparar."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class Usuario(Base):
@@ -48,6 +57,8 @@ class Usuario(Base):
     rol_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))              # RN-002
     estado: Mapped[str] = mapped_column(String(20), default=ESTADO_ACTIVO)
     version_sesion: Mapped[int] = mapped_column(Integer, default=0)          # RN-009
+    intentos_fallidos: Mapped[int] = mapped_column(Integer, default=0)       # RN-007
+    bloqueado_hasta: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # RN-007
     fecha_registro: Mapped[datetime] = mapped_column(DateTime, default=_ahora_utc)
     fecha_actualizacion: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True, onupdate=_ahora_utc
@@ -119,3 +130,33 @@ class Usuario(Base):
         self.estado = nuevo_estado
         if nuevo_estado == ESTADO_INACTIVO:
             self.version_sesion = (self.version_sesion or 0) + 1      # RN-009
+
+    # ── Inicio de sesión (HU-02) ──────────────────────────
+
+    def verificar_no_bloqueado(self, ahora: datetime) -> None:
+        """RN-007: mientras dure el bloqueo no se puede iniciar sesión, ni con la contraseña correcta."""
+        if self.bloqueado_hasta and ahora < self.bloqueado_hasta:
+            minutos = int((self.bloqueado_hasta - ahora).total_seconds() // 60) + 1
+            raise NoAutenticadoError(
+                f"La cuenta está bloqueada temporalmente por intentos fallidos. "
+                f"Intente de nuevo en {minutos} minuto(s).", campo="correo", regla="RN-007")
+
+    def verificar_activo(self) -> None:
+        """RN-006: un usuario inactivo no puede iniciar sesión ni ejecutar operaciones."""
+        if not self.esta_activo():
+            raise NoAutenticadoError(
+                "La cuenta se encuentra inactiva; contacte al administrador.",
+                campo="correo", codigo="AUT_USUARIO_INACTIVO", regla="RN-006")
+
+    def registrar_intento_fallido(self, ahora: datetime, max_intentos: int,
+                                  minutos_bloqueo: int) -> None:
+        """RN-007: al llegar al máximo de intentos seguidos, bloquea la cuenta unos minutos."""
+        self.intentos_fallidos = (self.intentos_fallidos or 0) + 1
+        if self.intentos_fallidos >= max_intentos:
+            self.bloqueado_hasta = ahora + timedelta(minutes=minutos_bloqueo)
+            self.intentos_fallidos = 0
+
+    def registrar_ingreso_exitoso(self) -> None:
+        """Un ingreso correcto reinicia el conteo de intentos fallidos (son 'consecutivos')."""
+        self.intentos_fallidos = 0
+        self.bloqueado_hasta = None
