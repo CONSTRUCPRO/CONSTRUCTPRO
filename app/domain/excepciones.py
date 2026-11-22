@@ -118,5 +118,5 @@ class NoAutenticadoError(ConstruProError):
     codigo = "AUT_CREDENCIALES_INVALIDAS"
 
     def __init__(self, mensaje: str, campo: Optional[str] = None,
-                 codigo: Optional[str] = None):
-        super().__init__(mensaje, campo=campo, codigo=codigo)
+                 codigo: Optional[str] = None, regla: Optional[str] = None):
+        super().__init__(mensaje, regla=regla, campo=campo, codigo=codigo)
