@@ -179,4 +179,3 @@ class CotizacionDetalle(Base):
 
     cotizacion: Mapped[Cotizacion] = relationship(back_populates="detalle")
     material: Mapped[Material] = relationship()
-    

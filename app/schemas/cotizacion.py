@@ -82,4 +82,3 @@ class CotizacionResponse(BaseModel):
             fecha_actualizacion=fecha_iso(c.fecha_actualizacion),
             aprobacion=None if aprobacion is None else AprobacionResumen.desde_modelo(aprobacion),
         )
-    
