@@ -35,6 +35,15 @@ class RolRepository:
         ).all()
         return list(roles), total
 
+    def contar_usuarios_activos(self, rol_id: int) -> int:
+        """Apoya la RN-012: cuántos usuarios activos tienen asignado este rol."""
+        # Import local: usuario.py ya importa rol.py, así se evita un import circular.
+        from app.domain.usuario import Usuario
+        return self.db.scalar(
+            select(func.count(Usuario.id))
+            .where(Usuario.rol_id == rol_id, Usuario.estado == "activo")
+        )
+
     def guardar(self, rol: Rol) -> Rol:
         self.db.add(rol)
         self.db.commit()
