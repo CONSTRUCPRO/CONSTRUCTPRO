@@ -43,9 +43,9 @@ Orden de trabajo de Jaime: base común → HU-03 → HU-01 → HU-02 → HU-05 �
 
 ## 3. Ramas y flujo de trabajo (obligatorio)
 
-- `main`: solo la versión entregable. Nunca se trabaja ni se hace push directo ahí.
+- `main` y `staging`: solo para entregas. Nunca se trabaja ni se hace push directo ahí.
+- `testing`: rama donde el compañero prueba las HU ya integradas. Solo recibe PR desde `development`.
 - `development`: integración. **No se hace push directo**: todo entra por pull request.
-- `testing` / `staging`: etapas posteriores, todavía no se usan.
 - Una rama por HU, que sale de `development` actualizado:
   `feature/hu-XX-nombre-corto` (ej.: `feature/hu-09-materiales`).
 
@@ -53,15 +53,29 @@ Ciclo de cada HU:
 1. `git checkout development` + `git pull` → `git checkout -b feature/hu-XX-...`
 2. Programar con commits pequeños y claros, en español.
 3. `git push -u origin feature/hu-XX-...` → abrir el PR hacia `development` con "Refs #N" en la descripción.
-4. El **otro integrante** revisa y hace el merge.
-5. El otro integrante **prueba manualmente** en `/docs` (Swagger), con pantallazos, siguiendo los
-   "Casos de Prueba Funcional" del issue.
+4. El **otro integrante** revisa el PR (código, pruebas unitarias y migración) y hace el merge a
+   `development`, borrando la rama de la HU.
+5. Se abre el PR **`development` → `testing`** y se fusiona (sin borrar `development`). Puede llevar
+   varias HU juntas.
+6. El otro integrante **prueba en la rama `testing`** (`git checkout testing`, `git pull`,
+   `pip install -r requirements.txt`, `alembic upgrade head`, `uvicorn main:app --reload`) siguiendo
+   los "Casos de Prueba Funcional" del issue, con pantallazos en `/docs` (Swagger). Si algo falla, se
+   corrige con una rama nueva desde `development` y se repite el ciclo.
+7. Si las pruebas pasan, la HU queda en Done.
 
-Columnas del tablero (GitHub Project): Todo → In Progress (rama creada) → Gestión de integración
-(PR abierto, en revisión o merge) → Testing (el compañero prueba) → Done. Las tarjetas se mueven a mano.
+**Acuerdo vigente:** las pruebas funcionales cruzadas (paso 6) **se hacen al final**, todas juntas. Por
+ahora cada HU se lleva hasta `testing` y su tarjeta queda en la columna Testing.
 
-Forma de trabajo de Jaime con su asistente: el asistente **no escribe en el repo**. Le pasa el
-código y los comandos explicados, y Jaime los copia, pega y ejecuta. Respeta la preferencia de tu propio usuario.
+Columnas del tablero (GitHub Project). Las tarjetas se mueven a mano:
+- **Todo** → **In Progress** (rama creada)
+- → **Gestión de integración**: desde que se abre el PR a `development` hasta que la HU llega a `testing`
+- → **Testing**: la HU ya está en `testing`, esperando la prueba del compañero
+- → **Done**: pruebas aprobadas con pantallazos
+
+Forma de trabajo de Jaime con su asistente: por defecto el asistente **no escribe en el repo**; le pasa
+el código y los comandos explicados, y Jaime los copia, pega y ejecuta. Cuando Jaime lo delega, el
+asistente escribe y hace commits/PR con la cuenta de Jaime, **sin líneas de coautor** (solo debe quedar
+el registro de Jaime). Respeta la preferencia de tu propio usuario.
 
 ## 4. Arquitectura acordada
 
@@ -96,10 +110,10 @@ Reglas de la arquitectura:
   arreglo y paginación en `meta.paginacion`.
 - **Nunca se suben** `.env`, `dev.db`, `venv/` ni `__pycache__/` (ya están en `.gitignore`).
 
-## 5. Base común (la está haciendo Jaime en `feature/base-comun`)
+## 5. Base común (integrada en `development`, PR #18)
 
-Todas las HU la usan. **No crear versiones propias de esto.** Cuando el PR esté en `development`,
-importar desde ahí. Si el nombre exacto de una función cambia, manda el código del repo.
+Todas las HU la usan. **No crear versiones propias de esto.** Si el nombre exacto de una función
+cambia, manda el código del repo.
 
 - `app/domain/excepciones.py`: conserva los nombres y el orden de parámetros de las excepciones de
   Alejandro y agrega las que faltaban. **El servicio y el dominio lanzan estas excepciones; nunca HTTPException.**
@@ -148,30 +162,62 @@ importar desde ahí. Si el nombre exacto de una función cambia, manda el códig
 `development`. Si al integrar quedan dos "heads" (`alembic heads` muestra dos), se resuelve con
 `alembic merge heads -m "merge"`. Cada PR incluye su propia migración.
 
-## 6. Estado actual del código de materiales (revisado el 16-11-2026)
+## 6. Estado del proyecto (actualizado el 22-11-2026)
 
-En `development` están `api/material_router.py`, `service/material_service.py`, `domain/material.py`,
-`domain/excepciones.py` y `repository/material_repository.py`, **en la raíz** y con datos **en memoria**,
-siguiendo la guía del taller. Funcionan entre sí, pero:
-1. La ruta `/api/v1/materiales` **no queda registrada** en la app, porque el autoregistro solo mira
-   `app/api/`.
-2. Los datos están en memoria. Las HU exigen base de datos (Alembic y SQLAlchemy ya están configurados).
-3. Las respuestas no usan el sobre estándar, y el id sale como `id` en vez de `material_id`.
-4. Esos commits entraron directo a `development`, sin PR.
+El código del taller que estaba en la raíz (`api/`, `service/`, `domain/`, `repository/`) **ya se eliminó**
+en el PR de la HU-09. Todo vive en `app/`.
 
-**Tarea sugerida para HU-09** (rama `feature/hu-09-materiales`, después de que se integre la base común):
-- Modelos `Categoria` y `Material` (SQLAlchemy) en `app/domain/material.py`, con las reglas
-  RN-031 a RN-035 que ya están escritas.
-- Schemas Pydantic en `app/schemas/material.py`.
-- Repositorio con Session en `app/repositories/material_repository.py`.
-- Servicio en `app/services/material_service.py`.
-- Router en `app/api/material_router.py`, usando el sobre y las excepciones de la base común.
-- Migración de Alembic.
-- Borrar las carpetas raíz `api/`, `service/`, `domain/` y `repository/` en ese mismo PR.
+| HU | Responsable | Estado | PR |
+|---|---|---|---|
+| Base del proyecto, schemas y base común | Jaime | En `development` y `testing` | #16, #17, #18 |
+| HU-03 Roles y Permisos (#3) | Jaime | En `testing` | #19 |
+| HU-09 Catálogo de Materiales (#6) | Alejandro | En `testing` | #20 |
+| HU-10 Gestión de Proveedores (#7) | Alejandro | En `testing` | #21 |
+| HU-01 Gestión de Usuarios (#2) | Jaime | En `testing` | #23 |
+| HU-11 Relación Material–Proveedor (#8) | Alejandro | En `testing` | #24 |
+
+PR de `development` → `testing`: #22 (HU-03, HU-09, HU-10) y #25 (HU-01, HU-11).
+
+**Migraciones (un solo head):** `a3f1c9e2b7d4` HU-03 → `246dbe7806b2` HU-09 → `c6694196e06d` HU-10 →
+`173f32cdf2cd` HU-01 → `9dcb06782bba` HU-11. Antes de generar una migración nueva, hacer pull de
+`development` para colgarla del último head.
+
+**Tablas que usan otras HU** (no reimplementar sus reglas: llamar a los métodos del dominio):
+
+| Tabla | PK | Estado | Métodos útiles |
+|---|---|---|---|
+| `roles`, `permisos_rol` | `id` | `activo` / `inactivo` | `Rol.tiene_permiso(modulo, accion)`; en routers `requiere_permiso("Modulo", "accion")` |
+| `usuarios` | `id` | `activo` / `inactivo` | `Usuario.verificar_contrasena()` (para la HU-02), `version_sesion` (RN-009) |
+| `categorias`, `materiales` | `id` | `activo` / `inactivo` | `Material.verificar_disponible()` (RN-034, para HU-12 y HU-17) |
+| `proveedores` | `id` | `activo` / `inactivo` | `Proveedor.verificar_puede_recibir_ordenes()` (RN-039, para HU-21) |
+| `proveedor_material` | `id` | `disponible` (bool) | Base del comparativo de precios (HU-16) |
+
+**Pendientes conocidos:**
+1. `ProveedorRepository.contar_ordenes_abiertas()` devuelve 0 de forma fija (`PENDIENTE HU-21`). Jaime
+   lo implementa en la HU-21 para activar la RN-040.
+2. Permisos del Coordinador: se acordó ampliar el módulo **Materiales** (crear, editar, inactivar) con una
+   migración nueva; los proveedores usan ese mismo módulo (MODULO-03). Después, los routers de
+   materiales, proveedores y ofertas pasan de `requiere_rol(...)` a `requiere_permiso("Materiales", ...)`.
+3. Formato del sobre: el Componente F del parcial y todos los issues usan `exito`, `codigo`, `mensaje`,
+   `datos`, `errores` y `meta`. Alejandro recuerda que el profesor pidió `success`/`message`/`data`.
+   **No se cambia nada hasta tener la plantilla exacta del profesor.** Si cambia, se hace solo en la base
+   común (`app/core/respuestas.py`, `app/schemas/respuesta.py`, `app/core/errores.py`) y en los
+   ejemplos de error de Swagger de los routers.
+4. Siguientes HU: Jaime → HU-05 Proyectos (desbloquea la HU-12 de Alejandro), HU-02, HU-06, HU-20, HU-21.
+   Alejandro → HU-12 (cuando exista HU-05), HU-16, HU-17, HU-29, HU-23.
+
+**Notas de entorno:**
+- Después de un pull que cambie `requirements.txt`: `pip install -r requirements.txt` (con el venv activo)
+  y luego `alembic upgrade head`.
+- En ramas feature, usar `git pull --no-edit` para que no se abra el editor del mensaje de merge.
+- Si git dice "Deletion of directory ... failed" (OneDrive), responder `n`.
+- Si VS Code dice "couldn't find remote ref feature/...", es que el PR ya se fusionó y se borró la rama:
+  `git checkout development` + `git pull origin development` + `git branch -d feature/...`.
 
 ## 7. Al empezar cada sesión
 
-1. `git checkout development` + `git pull` para ver lo que integró el compañero.
+1. `git checkout development` + `git pull` para ver lo que integró el compañero (y, si cambió
+   `requirements.txt` o hay migraciones nuevas, `pip install -r requirements.txt` + `alembic upgrade head`).
 2. Revisar los PR abiertos: el compañero puede estar esperando una revisión.
 3. Leer el issue de la HU antes de programar.
 
