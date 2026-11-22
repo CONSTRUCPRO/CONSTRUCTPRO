@@ -144,10 +144,14 @@ cambia, manda el código del repo.
   `ValueError("mensaje en español")`, ese texto llega al cliente), los 404 de ruta y los errores inesperados
   (500 `ERR_INTERNO`, con el detalle solo en el log junto al `peticion_id`). También pone el encabezado
   `X-Peticion-Id`. **Los routers no llevan try/except**: llaman al servicio y devuelven `respuesta_exitosa(...)`.
-- `app/core/seguridad.py`: `obtener_usuario_actual` devuelve un `UsuarioActual(usuario_id, rol)`.
-  `requiere_rol("Administrador", regla="RN-014")` crea una dependencia que responde 403 si el rol no coincide.
-  **Es temporal hasta la HU-02**: lee los encabezados `X-Rol` (obligatorio) y `X-Usuario-Id`, que se llenan
-  en Swagger. Con la HU-02 solo cambia por dentro (JWT), y los endpoints no se tocan.
+- `app/core/seguridad.py` (**HU-02, ya con JWT**): `obtener_usuario_actual` lee el encabezado
+  `Authorization: Bearer <token>` (en Swagger: botón **Authorize**), valida firma y vigencia (RN-008),
+  que la sesión siga abierta (tabla `sesiones`, logout), que el usuario esté activo (RN-006) y su
+  `version_sesion` (RN-009), y devuelve `UsuarioActual(usuario_id, rol, sesion_id)` con el **rol vigente
+  de la BD** (RN-010). `requiere_rol("Director", regla="RN-022")` y `requiere_permiso("Modulo", "accion")`
+  responden 403 si no corresponde. **El encabezado temporal `X-Rol` ya no existe.** Login:
+  `POST /api/v1/auth/login` (también `/refresh` y `/logout`). La migración de la HU-02 crea el usuario
+  inicial `admin@construpro.co` / `Admin2026` (rol Administrador) para el primer login.
 
   ```python
   @router.post("", response_model=Respuesta[MaterialResponse], status_code=201)
@@ -175,6 +179,9 @@ en el PR de la HU-09. Todo vive en `app/`.
 | HU-10 Gestión de Proveedores (#7) | Alejandro | En `testing` | #21 |
 | HU-01 Gestión de Usuarios (#2) | Jaime | En `testing` | #23 |
 | HU-11 Relación Material–Proveedor (#8) | Alejandro | En `testing` | #24 |
+| HU-05 Gestión de Proyectos (#4) | Jaime | En `testing` | #28 |
+| HU-06 Presupuesto del Proyecto (#5) | Jaime | En `testing` | #30 |
+| HU-02 Autenticación con Token (#1) | Jaime | PR abierto | — |
 
 PR de `development` → `testing`: #22 (HU-03, HU-09, HU-10) y #25 (HU-01, HU-11).
 
