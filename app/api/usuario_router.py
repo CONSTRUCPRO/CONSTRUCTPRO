@@ -52,9 +52,9 @@ def _error(campo: Optional[str], codigo: str, mensaje: str, regla: Optional[str]
 
 
 ERROR_401 = _ejemplo_error(
-    "Falta identificarse (encabezado X-Rol, temporal hasta la HU-02)",
+    "Sin token, token vencido o sesión cerrada (HU-02)",
     "AUT_CREDENCIALES_INVALIDAS", "El correo o la contraseña no son correctos.",
-    [_error(None, "AUT_CREDENCIALES_INVALIDAS", "Debe identificarse para usar este servicio.")])
+    [_error(None, "AUT_CREDENCIALES_INVALIDAS", "Debe iniciar sesión y enviar el token en el encabezado Authorization: Bearer <token>.")])
 ERROR_403 = _ejemplo_error(
     "El rol no tiene el permiso en el módulo Usuarios", "AUT_SIN_PERMISO",
     "Su rol no le permite realizar esta operación.",

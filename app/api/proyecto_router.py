@@ -49,9 +49,9 @@ def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
 
 
 ERROR_401 = _ejemplo_error(
-    "Falta identificarse (encabezado X-Rol, temporal hasta la HU-02)",
+    "Sin token, token vencido o sesión cerrada (HU-02)",
     "AUT_CREDENCIALES_INVALIDAS", "El correo o la contraseña no son correctos.",
-    None, "Debe identificarse para usar este servicio.")
+    None, "Debe iniciar sesión y enviar el token en el encabezado Authorization: Bearer <token>.")
 ERROR_403 = _ejemplo_error(
     "El rol no tiene el permiso en el módulo Proyectos", "AUT_SIN_PERMISO",
     "Su rol no le permite realizar esta operación.",
