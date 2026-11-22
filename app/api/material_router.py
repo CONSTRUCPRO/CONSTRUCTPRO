@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
-from app.core.seguridad import UsuarioActual, obtener_usuario_actual, requiere_rol
+from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.material_repository import MaterialRepository
 from app.schemas.material import (
     EstadoUpdate,
@@ -22,8 +22,9 @@ from app.services.material_service import MaterialService
 
 router = APIRouter(prefix="/api/v1/materiales", tags=["Materiales"])
 
-# Roles que pueden modificar el catálogo; consultar lo puede hacer cualquier usuario identificado.
-ROLES_CATALOGO = ("Administrador", "Coordinador")
+# Permisos del módulo "Materiales" (tabla permisos_rol). Con los roles por defecto:
+# Administrador y Coordinador crean, editan e inactivan; todos los roles consultan.
+MODULO = "Materiales"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> MaterialService:
@@ -51,9 +52,10 @@ def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
 ERROR_401 = _ejemplo_error("Sin token, token vencido o sesión cerrada (HU-02)",
                            "AUT_CREDENCIALES_INVALIDAS", "El correo o la contraseña no son correctos.",
                            None, "Debe iniciar sesión y enviar el token en el encabezado Authorization: Bearer <token>.", None)
-ERROR_403 = _ejemplo_error("El rol no tiene permiso", "AUT_SIN_PERMISO",
-                           "Su rol no le permite realizar esta operación.",
-                           "rol", "El rol Empleado no puede realizar esta operación.", None)
+ERROR_403 = _ejemplo_error("El rol no tiene el permiso en el módulo Materiales", "AUT_SIN_PERMISO",
+                           "Su rol no le permite realizar esta operación.", "rol",
+                           "El rol Empleado no tiene permiso para 'crear' en el módulo Materiales.",
+                           None)
 ERROR_404 = _ejemplo_error("El material no existe", "REC_NO_ENCONTRADO",
                            "El recurso solicitado no existe.", "material_id",
                            "No existe un material con el identificador 115.", None)
@@ -84,7 +86,7 @@ ERROR_422_PRECIO = _ejemplo_error(
                         422: ERROR_422_PRECIO})
 def crear_material(datos: MaterialCreate,
                    servicio: MaterialService = Depends(obtener_servicio),
-                   usuario: UsuarioActual = Depends(requiere_rol(*ROLES_CATALOGO))):
+                   usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
     return respuesta_exitosa(servicio.crear(datos), "Material registrado correctamente.")
 
 
@@ -92,7 +94,7 @@ def crear_material(datos: MaterialCreate,
             summary="Consultar catálogo de materiales",
             description="Consulta paginada del catálogo. Filtros opcionales por categoría, "
                         "parte del nombre y estado. La paginación va en `meta.paginacion`.",
-            responses={401: ERROR_401})
+            responses={401: ERROR_401, 403: ERROR_403})
 def listar_materiales(
         categoria_id: Optional[int] = Query(None, description="Id de la categoría"),
         nombre: Optional[str] = Query(None, description="Texto contenido en el nombre"),
@@ -100,7 +102,7 @@ def listar_materiales(
         pagina: int = Query(1, ge=1, description="Número de página"),
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: MaterialService = Depends(obtener_servicio),
-        usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+        usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
     items, paginacion = servicio.listar(categoria_id, nombre, estado, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
 
@@ -108,10 +110,10 @@ def listar_materiales(
 @router.get("/{material_id}", response_model=Respuesta[MaterialResponse],
             summary="Detalle de un material",
             description="Devuelve los datos de un material por su identificador.",
-            responses={401: ERROR_401, 404: ERROR_404})
+            responses={401: ERROR_401, 403: ERROR_403, 404: ERROR_404})
 def obtener_material(material_id: int,
                      servicio: MaterialService = Depends(obtener_servicio),
-                     usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+                     usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
     return respuesta_exitosa(servicio.obtener(material_id), "Consulta realizada correctamente.")
 
 
@@ -123,7 +125,7 @@ def obtener_material(material_id: int,
                        409: ERROR_409_DUPLICADO, 422: ERROR_422_PRECIO})
 def editar_material(material_id: int, datos: MaterialUpdate,
                     servicio: MaterialService = Depends(obtener_servicio),
-                    usuario: UsuarioActual = Depends(requiere_rol(*ROLES_CATALOGO))):
+                    usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "editar"))):
     return respuesta_exitosa(servicio.editar(material_id, datos),
                              "Material actualizado correctamente.")
 
@@ -134,7 +136,7 @@ def editar_material(material_id: int, datos: MaterialUpdate,
               responses={401: ERROR_401, 403: ERROR_403, 404: ERROR_404, 422: ERROR_422_PRECIO})
 def actualizar_precio(material_id: int, datos: PrecioUpdate,
                       servicio: MaterialService = Depends(obtener_servicio),
-                      usuario: UsuarioActual = Depends(requiere_rol(*ROLES_CATALOGO))):
+                      usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "editar"))):
     return respuesta_exitosa(servicio.actualizar_precio(material_id, datos),
                              "Precio de referencia actualizado correctamente.")
 
@@ -146,6 +148,6 @@ def actualizar_precio(material_id: int, datos: PrecioUpdate,
               responses={401: ERROR_401, 403: ERROR_403, 404: ERROR_404, 409: ERROR_409_ESTADO})
 def cambiar_estado(material_id: int, datos: EstadoUpdate,
                    servicio: MaterialService = Depends(obtener_servicio),
-                   usuario: UsuarioActual = Depends(requiere_rol(*ROLES_CATALOGO))):
+                   usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "inactivar"))):
     return respuesta_exitosa(servicio.cambiar_estado(material_id, datos),
                              "Estado del material actualizado correctamente.")
