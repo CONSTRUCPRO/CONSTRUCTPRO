@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
-from app.core.seguridad import UsuarioActual, obtener_usuario_actual, requiere_rol
+from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.proveedor_repository import ProveedorRepository
 from app.schemas.proveedor import (
     EstadoProveedorUpdate,
@@ -21,9 +21,10 @@ from app.services.proveedor_service import ProveedorService
 
 router = APIRouter(prefix="/api/v1/proveedores", tags=["Proveedores"])
 
-# Roles que pueden modificar proveedores; consultar lo puede hacer cualquier usuario identificado.
-# (La HU-03 no tiene un módulo "Proveedores" en permisos_rol, por eso se usa requiere_rol.)
-ROLES_PROVEEDORES = ("Administrador", "Coordinador")
+# Los proveedores pertenecen al módulo "Materiales" (MODULO-03), así que usan sus permisos.
+# Con los roles por defecto: Administrador y Coordinador crean, editan e inactivan;
+# todos los roles consultan.
+MODULO = "Materiales"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> ProveedorService:
@@ -51,9 +52,10 @@ def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
 ERROR_401 = _ejemplo_error("Falta identificarse (encabezado X-Rol, temporal hasta la HU-02)",
                            "AUT_CREDENCIALES_INVALIDAS", "El correo o la contraseña no son correctos.",
                            None, "Debe identificarse para usar este servicio.", None)
-ERROR_403 = _ejemplo_error("El rol no tiene permiso", "AUT_SIN_PERMISO",
-                           "Su rol no le permite realizar esta operación.",
-                           "rol", "El rol Empleado no puede realizar esta operación.", None)
+ERROR_403 = _ejemplo_error("El rol no tiene el permiso en el módulo Materiales", "AUT_SIN_PERMISO",
+                           "Su rol no le permite realizar esta operación.", "rol",
+                           "El rol Empleado no tiene permiso para 'crear' en el módulo Materiales.",
+                           None)
 ERROR_404 = _ejemplo_error("El proveedor no existe", "REC_NO_ENCONTRADO",
                            "El recurso solicitado no existe.", "proveedor_id",
                            "No existe un proveedor con el identificador 8.", None)
@@ -82,7 +84,7 @@ ERROR_422_FORMATO = _ejemplo_error(
                         422: ERROR_422_FORMATO})
 def crear_proveedor(datos: ProveedorCreate,
                     servicio: ProveedorService = Depends(obtener_servicio),
-                    usuario: UsuarioActual = Depends(requiere_rol(*ROLES_PROVEEDORES))):
+                    usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
     return respuesta_exitosa(servicio.crear(datos), "Proveedor registrado correctamente.")
 
 
@@ -90,14 +92,14 @@ def crear_proveedor(datos: ProveedorCreate,
             summary="Consultar proveedores",
             description="Consulta paginada de proveedores. Filtros opcionales por estado y "
                         "parte de la razón social. La paginación va en `meta.paginacion`.",
-            responses={401: ERROR_401})
+            responses={401: ERROR_401, 403: ERROR_403})
 def listar_proveedores(
         estado: Optional[str] = Query(None, description="activo | inactivo"),
         razon_social: Optional[str] = Query(None, description="Texto contenido en la razón social"),
         pagina: int = Query(1, ge=1, description="Número de página"),
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: ProveedorService = Depends(obtener_servicio),
-        usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+        usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
     items, paginacion = servicio.listar(estado, razon_social, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
 
@@ -105,10 +107,10 @@ def listar_proveedores(
 @router.get("/{proveedor_id}", response_model=Respuesta[ProveedorResponse],
             summary="Detalle de un proveedor",
             description="Devuelve los datos de un proveedor por su identificador.",
-            responses={401: ERROR_401, 404: ERROR_404})
+            responses={401: ERROR_401, 403: ERROR_403, 404: ERROR_404})
 def obtener_proveedor(proveedor_id: int,
                       servicio: ProveedorService = Depends(obtener_servicio),
-                      usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+                      usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
     return respuesta_exitosa(servicio.obtener(proveedor_id), "Consulta realizada correctamente.")
 
 
@@ -120,7 +122,7 @@ def obtener_proveedor(proveedor_id: int,
                        409: ERROR_409_NIT, 422: ERROR_422_FORMATO})
 def editar_proveedor(proveedor_id: int, datos: ProveedorUpdate,
                      servicio: ProveedorService = Depends(obtener_servicio),
-                     usuario: UsuarioActual = Depends(requiere_rol(*ROLES_PROVEEDORES))):
+                     usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "editar"))):
     return respuesta_exitosa(servicio.editar(proveedor_id, datos),
                              "Proveedor actualizado correctamente.")
 
@@ -133,6 +135,6 @@ def editar_proveedor(proveedor_id: int, datos: ProveedorUpdate,
               responses={401: ERROR_401, 403: ERROR_403, 404: ERROR_404, 409: ERROR_409_ORDENES})
 def cambiar_estado(proveedor_id: int, datos: EstadoProveedorUpdate,
                    servicio: ProveedorService = Depends(obtener_servicio),
-                   usuario: UsuarioActual = Depends(requiere_rol(*ROLES_PROVEEDORES))):
+                   usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "inactivar"))):
     servicio.cambiar_estado(proveedor_id, datos)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
