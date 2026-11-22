@@ -52,4 +52,3 @@ class ComparativoRepository:
         self.db.commit()
         self.db.refresh(comparativo)
         return comparativo
-    

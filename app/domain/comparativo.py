@@ -180,4 +180,3 @@ class ComparativoOferta(Base):
     dias_entrega: Mapped[int] = mapped_column(Integer)
 
     comparativo: Mapped[Comparativo] = relationship(back_populates="ofertas")
-    

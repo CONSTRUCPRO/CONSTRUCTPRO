@@ -94,4 +94,3 @@ class ComparativoResponse(BaseModel):
             fecha_registro=fecha_iso(c.fecha_registro),
             fecha_seleccion=fecha_iso(c.fecha_seleccion),
         )
-    

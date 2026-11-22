@@ -57,4 +57,3 @@ class ComparativoService:
         comparativo = self._buscar(comparativo_id)
         comparativo.seleccionar(datos.proveedor_id, datos.justificacion)  # RN-058, 059, 060
         return ComparativoResponse.desde_modelo(self.repo.guardar(comparativo))
-    
