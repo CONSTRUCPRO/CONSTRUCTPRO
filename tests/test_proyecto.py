@@ -1,6 +1,6 @@
 # tests/test_proyecto.py
 # Pruebas unitarias de las reglas de negocio de la HU-05 (RN-016 a RN-019, RN-024, RN-025)
-# y del método que usará la HU-12 (RN-020, RN-041). BD SQLite en memoria: no tocan dev.db.
+# y del método que usará la HU-12 (RN-020, RN-021, RN-041). BD SQLite en memoria: no tocan dev.db.
 # Ejecutar desde la raíz del proyecto:  python -m unittest discover -s tests -v
 import unittest
 from datetime import date
@@ -16,6 +16,7 @@ from app.domain.excepciones import (
     RecursoNoEncontradoError,
     ReglaNegocioError,
 )
+from app.domain.presupuesto import Presupuesto
 from app.domain.rol import Rol
 from app.domain.usuario import Usuario
 from app.repositories.proyecto_repository import ProyectoRepository
@@ -208,16 +209,21 @@ class PruebaProyecto(unittest.TestCase):
         with self.assertRaises(ValidationError):
             EstadoProyectoUpdate(estado="cerrado")
 
-    # ── Para la HU-12: RN-041 y RN-020 ─────────────────────
+    # ── Para la HU-12: RN-041, RN-020 y RN-021 ─────────────
 
-    def test_rn041_y_rn020_admite_solicitudes(self):
+    def test_rn041_rn020_y_rn021_admite_solicitudes(self):
         self.servicio.crear(datos())
         proyecto = self.servicio.repo.obtener_por_id(1)
         with self.assertRaises(ReglaNegocioError) as ctx:        # sin ubicación
             proyecto.verificar_admite_solicitudes()
         self.assertEqual(ctx.exception.regla, "RN-020")
         self.servicio.registrar_ubicacion(1, UBICACION)
-        proyecto.verificar_admite_solicitudes()                   # activo y con ubicación: OK
+        with self.assertRaises(ReglaNegocioError) as ctx:        # sin presupuesto (HU-06)
+            proyecto.verificar_admite_solicitudes()
+        self.assertEqual(ctx.exception.regla, "RN-021")
+        proyecto.presupuesto = Presupuesto.asignar(250000000, None)
+        self.db.commit()
+        proyecto.verificar_admite_solicitudes()       # activo, con ubicación y presupuesto: OK
         self.servicio.cambiar_estado(1, EstadoProyectoUpdate(estado="suspendido"))
         with self.assertRaises(ReglaNegocioError) as ctx:
             proyecto.verificar_admite_solicitudes()
