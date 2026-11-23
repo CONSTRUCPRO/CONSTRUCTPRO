@@ -20,5 +20,8 @@ class Settings:
     MAX_INTENTOS_FALLIDOS: int = int(os.getenv("MAX_INTENTOS_FALLIDOS", "5"))     # RN-007
     MINUTOS_BLOQUEO: int = int(os.getenv("MINUTOS_BLOQUEO", "15"))                # RN-007
 
+    # HU-20 Decisión de aprobación (RN-076): por encima de este monto solo aprueba el Director.
+    TOPE_APROBACION_COORDINADOR: float = float(os.getenv("TOPE_APROBACION_COORDINADOR", "10000000"))
+
 
 settings = Settings()
