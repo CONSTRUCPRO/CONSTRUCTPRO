@@ -166,7 +166,7 @@ cambia, manda el código del repo.
 `development`. Si al integrar quedan dos "heads" (`alembic heads` muestra dos), se resuelve con
 `alembic merge heads -m "merge"`. Cada PR incluye su propia migración.
 
-## 6. Estado del proyecto (actualizado el 22-11-2026)
+## 6. Estado del proyecto (actualizado el 23-11-2026)
 
 El código del taller que estaba en la raíz (`api/`, `service/`, `domain/`, `repository/`) **ya se eliminó**
 en el PR de la HU-09. Todo vive en `app/`.
@@ -181,12 +181,18 @@ en el PR de la HU-09. Todo vive en `app/`.
 | HU-11 Relación Material–Proveedor (#8) | Alejandro | En `testing` | #24 |
 | HU-05 Gestión de Proyectos (#4) | Jaime | En `testing` | #28 |
 | HU-06 Presupuesto del Proyecto (#5) | Jaime | En `testing` | #30 |
-| HU-02 Autenticación con Token (#1) | Jaime | PR abierto | — |
+| HU-02 Autenticación con Token (#1) | Jaime | En `testing` | #32 |
+| HU-12 Registro de Solicitud de Materiales (#9) | Alejandro | En `testing` | #35 |
+| HU-16 Comparativo de Precios (#10) | Alejandro | En `testing` | #37 |
+| HU-17 Generación de Cotización (#11) | Alejandro | En `testing` | #39 |
+| HU-20 Decisión de Aprobación (#12) | Jaime | PR abierto | — |
 
-PR de `development` → `testing`: #22 (HU-03, HU-09, HU-10) y #25 (HU-01, HU-11).
+PR de `development` → `testing`: #22, #25, #29, #31, #34, #36, #38 y #40 (uno por cada integración).
 
 **Migraciones (un solo head):** `a3f1c9e2b7d4` HU-03 → `246dbe7806b2` HU-09 → `c6694196e06d` HU-10 →
-`173f32cdf2cd` HU-01 → `9dcb06782bba` HU-11. Antes de generar una migración nueva, hacer pull de
+`173f32cdf2cd` HU-01 → `9dcb06782bba` HU-11 → `e4a0a96d3d9a` permisos Coordinador → `02a74136ff30` HU-05 →
+`4a68f0bd7455` HU-06 → `323d9a89d28e` HU-02 → `7fb1455f410f` HU-12 → `6e5fa281e3b8` HU-16 →
+`a7acae97448c` HU-17 → `f2c2575f005d` HU-20. Antes de generar una migración nueva, hacer pull de
 `development` para colgarla del último head.
 
 **Tablas que usan otras HU** (no reimplementar sus reglas: llamar a los métodos del dominio):
@@ -198,20 +204,27 @@ PR de `development` → `testing`: #22 (HU-03, HU-09, HU-10) y #25 (HU-01, HU-11
 | `categorias`, `materiales` | `id` | `activo` / `inactivo` | `Material.verificar_disponible()` (RN-034, para HU-12 y HU-17) |
 | `proveedores` | `id` | `activo` / `inactivo` | `Proveedor.verificar_puede_recibir_ordenes()` (RN-039, para HU-21) |
 | `proveedor_material` | `id` | `disponible` (bool) | Base del comparativo de precios (HU-16) |
+| `proyectos` | `id` | `activo` / `suspendido` / `finalizado` | `Proyecto.verificar_admite_solicitudes()` (RN-041, RN-020, RN-021), `verificar_editable()` (RN-019) |
+| `presupuestos` | `id` (uno por proyecto) | — | `proyecto.presupuesto`: `verificar_saldo()` (RN-066), `comprometer()` (RN-068), `liberar()` (RN-069), `ejecutar()` (pagos, HU-23) |
+| `solicitudes`, `solicitud_detalles` | `id` | `pendiente` / `anulada` | `Solicitud.es_pendiente()`, `verificar_pendiente()` |
+| `comparativos`, `comparativo_ofertas` | `id` | `abierto` / `seleccionado` | Foto de ofertas; `ahorro` (RN-060) |
+| `cotizaciones`, `cotizacion_detalles` | `id` | `Generada` / `Enviada` / `Aprobada` / `Rechazada` / `Anulada` | Origen de la orden de compra (HU-21): la cotización `Aprobada` trae proveedor y detalle |
+| `aprobaciones` | `id` | `En revisión` / `Aprobada` / `Rechazada` / `Anulada` | Creada en la HU-17 y ampliada en la HU-20 (aprobador, rol, monto autorizado, fecha, motivo) |
 
 **Pendientes conocidos:**
 1. `ProveedorRepository.contar_ordenes_abiertas()` devuelve 0 de forma fija (`PENDIENTE HU-21`). Jaime
    lo implementa en la HU-21 para activar la RN-040.
-2. Permisos del Coordinador: se acordó ampliar el módulo **Materiales** (crear, editar, inactivar) con una
-   migración nueva; los proveedores usan ese mismo módulo (MODULO-03). Después, los routers de
-   materiales, proveedores y ofertas pasan de `requiere_rol(...)` a `requiere_permiso("Materiales", ...)`.
+2. Permisos del Coordinador: resuelto (PR #27 y #33). Materiales, proveedores y ofertas usan
+   `requiere_permiso("Materiales", ...)`.
 3. Formato del sobre: el Componente F del parcial y todos los issues usan `exito`, `codigo`, `mensaje`,
    `datos`, `errores` y `meta`. Alejandro recuerda que el profesor pidió `success`/`message`/`data`.
    **No se cambia nada hasta tener la plantilla exacta del profesor.** Si cambia, se hace solo en la base
    común (`app/core/respuestas.py`, `app/schemas/respuesta.py`, `app/core/errores.py`) y en los
    ejemplos de error de Swagger de los routers.
-4. Siguientes HU: Jaime → HU-05 Proyectos (desbloquea la HU-12 de Alejandro), HU-02, HU-06, HU-20, HU-21.
-   Alejandro → HU-12 (cuando exista HU-05), HU-16, HU-17, HU-29, HU-23.
+4. Siguientes HU: Jaime → HU-21 Orden de Compra (desbloquea la HU-23 de Alejandro).
+   Alejandro → HU-29 (Inventario) y HU-23 (Pagos, cuando exista la HU-21).
+5. Tope de aprobación del Coordinador (RN-076): `TOPE_APROBACION_COORDINADOR` en `.env`
+   (10.000.000 COP por defecto). Por encima solo aprueba el Director.
 
 **Notas de entorno:**
 - Después de un pull que cambie `requirements.txt`: `pip install -r requirements.txt` (con el venv activo)
