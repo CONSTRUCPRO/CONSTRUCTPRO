@@ -30,6 +30,10 @@ def obtener_peticion_id() -> str:
 
 
 def construir_meta(paginacion: Optional[dict] = None) -> dict:
+    """
+    Bloque `meta` que acompaña toda respuesta: hora UTC, versión de la API, id de la petición
+    (para rastrearla en el log) y la paginación cuando la respuesta es una lista.
+    """
     return {
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "version": VERSION_API,
