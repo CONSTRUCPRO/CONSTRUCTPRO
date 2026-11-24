@@ -31,12 +31,13 @@ class OrdenCompraRepository:
         return self.db.scalar(select(OrdenCompra).where(OrdenCompra.cotizacion_id == cotizacion_id))
 
     def contar_pagos(self, orden_id: int) -> int:
-        """
-        Apoya la RN-084. PENDIENTE HU-23 (Alejandro): la tabla de pagos todavía no existe,
-        así que devuelve 0. Cuando exista, aquí se cuentan los pagos vigentes de la orden;
-        el servicio y el dominio ya usan este valor, así que solo cambia este método.
-        """
-        return 0
+        """Apoya la RN-084: pagos vigentes (no anulados) de la orden (HU-23)."""
+        # Import local: pago.py importa orden_compra.py, así se evita un import circular.
+        from app.domain.pago import ESTADO_REGISTRADO, Pago
+        return self.db.scalar(
+            select(func.count()).select_from(Pago)
+            .where(Pago.orden_compra_id == orden_id, Pago.estado == ESTADO_REGISTRADO)
+        ) or 0
 
     def contar_envios(self, orden_id: int) -> int:
         """
