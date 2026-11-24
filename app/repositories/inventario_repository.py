@@ -1,5 +1,6 @@
 # app/repositories/inventario_repository.py
 # CAPA REPOSITORIO: solo guarda y consulta en la BD. Sin reglas de negocio, sin HTTP.
+from decimal import Decimal
 from typing import Optional
 
 from sqlalchemy import func, select
@@ -9,6 +10,7 @@ from app.domain.inventario import Inventario, MovimientoInventario
 from app.domain.material import Material
 from app.domain.orden_compra import OrdenCompra
 from app.domain.proyecto import Proyecto
+from app.repositories.pago_repository import PagoRepository
 
 
 class InventarioRepository:
@@ -68,6 +70,10 @@ class InventarioRepository:
         return list(items), total
 
     # ── Escritura ──────────────────────────────────────────
+
+    def total_pagado(self, orden_compra_id: int) -> Decimal:
+        """Pagos vigentes de la orden (lo calcula el repositorio de pagos de la HU-23)."""
+        return PagoRepository(self.db).total_pagado(orden_compra_id)
 
     def guardar(self, *objetos) -> None:
         """Guarda todo en una sola transacción (inventario, movimientos u orden)."""

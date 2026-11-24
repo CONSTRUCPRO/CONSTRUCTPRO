@@ -64,6 +64,7 @@ class InventarioService:
                             usuario_id: Optional[str]) -> RecepcionResponse:
         orden = self._buscar_orden(orden_compra_id)                        # 404
         orden.registrar_recepcion(_a_entero(usuario_id))                   # RN-089, RN-112
+        orden.cerrar_si_completa(self.repo.total_pagado(orden.id))         # RN-087
         self.repo.guardar(orden)
         return RecepcionResponse.desde_modelo(orden)
 

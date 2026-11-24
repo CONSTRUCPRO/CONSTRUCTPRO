@@ -12,6 +12,8 @@
 #   RN-084  Una orden con pagos o envíos registrados no puede anularse.
 #   RN-039  El proveedor debe estar activo (Proveedor.verificar_puede_recibir_ordenes, HU-10).
 #   RN-086  El estado solo avanza emitida -> confirmada -> cerrada.
+#   RN-087  La orden se cierra cuando tiene el pago completo y la recepción confirmada
+#           (cerrar_si_completa: se llama al registrar un pago y al registrar la recepción).
 #   RN-089  Una orden anulada o cerrada no admite más cambios de estado.
 #   RN-069  Al anular, el valor comprometido se libera del presupuesto del proyecto (FUN-084).
 #
@@ -65,6 +67,8 @@ class OrdenCompra(Base):
     motivo_anulacion: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     # HU-29: recepción física del material en la obra (la registra el almacenista, RN-112)
     fecha_recepcion: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # RN-087: cuándo quedó cerrada (pagada por completo y recibida en obra)
+    fecha_cierre: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     recibida_por_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("usuarios.id", name="fk_ordenes_compra_recibida_por_id"), nullable=True)
 
@@ -143,6 +147,22 @@ class OrdenCompra(Base):
             raise ConflictoEstadoError(
                 "RN-092", f"La orden {self.id} está {self.estado}; solo se registran pagos sobre "
                           f"órdenes confirmadas por el proveedor.", campo="orden_compra_id")
+
+    def cerrar_si_completa(self, total_pagado: Decimal) -> bool:
+        """
+        RN-087: una orden confirmada se cierra sola cuando ya tiene el pago completo
+        (total pagado >= valor total) y la recepción confirmada. No importa cuál de las dos
+        cosas pase primero: se llama al registrar un pago (HU-23) y al registrar la
+        recepción (HU-29). Al cerrarse deja de contar como orden abierta, así que ya se
+        puede finalizar el proyecto (RN-025) e inactivar el proveedor (RN-040).
+        Devuelve True si la orden quedó cerrada.
+        """
+        if (self.estado == ESTADO_CONFIRMADA and self.fecha_recepcion is not None
+                and total_pagado >= self.valor_total):
+            self.estado = ESTADO_CERRADA
+            self.fecha_cierre = _ahora_utc()
+            return True
+        return False
 
     def registrar_recepcion(self, usuario_id: Optional[int]) -> None:
         """

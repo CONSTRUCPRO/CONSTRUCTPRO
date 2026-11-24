@@ -166,7 +166,7 @@ cambia, manda el código del repo.
 `development`. Si al integrar quedan dos "heads" (`alembic heads` muestra dos), se resuelve con
 `alembic merge heads -m "merge"`. Cada PR incluye su propia migración.
 
-## 6. Estado del proyecto (actualizado el 23-11-2026)
+## 6. Estado del proyecto (actualizado el 24-11-2026)
 
 El código del taller que estaba en la raíz (`api/`, `service/`, `domain/`, `repository/`) **ya se eliminó**
 en el PR de la HU-09. Todo vive en `app/`.
@@ -186,14 +186,18 @@ en el PR de la HU-09. Todo vive en `app/`.
 | HU-16 Comparativo de Precios (#10) | Alejandro | En `testing` | #37 |
 | HU-17 Generación de Cotización (#11) | Alejandro | En `testing` | #39 |
 | HU-20 Decisión de Aprobación (#12) | Jaime | En `testing` | #41 |
-| HU-21 Generación de Orden de Compra (#13) | Jaime | PR abierto | — |
+| HU-21 Generación de Orden de Compra (#13) | Jaime | En `testing` | #43 |
+| HU-23 Registro y Control de Pagos (#14) | Alejandro | En `testing` | #45 |
+| HU-29 Entradas y Salidas de Inventario (#15) | Alejandro | En `testing` | #46 |
+| Revisión general (cierre de orden, RN-045, sobre en `/` y `/health`, 404/405) | Jaime | PR abierto | — |
 
 PR de `development` → `testing`: #22, #25, #29, #31, #34, #36, #38, #40 y #42 (uno por cada integración).
 
 **Migraciones (un solo head):** `a3f1c9e2b7d4` HU-03 → `246dbe7806b2` HU-09 → `c6694196e06d` HU-10 →
 `173f32cdf2cd` HU-01 → `9dcb06782bba` HU-11 → `e4a0a96d3d9a` permisos Coordinador → `02a74136ff30` HU-05 →
 `4a68f0bd7455` HU-06 → `323d9a89d28e` HU-02 → `7fb1455f410f` HU-12 → `6e5fa281e3b8` HU-16 →
-`a7acae97448c` HU-17 → `f2c2575f005d` HU-20 → `513f8b6b1190` HU-21. Antes de generar una migración nueva, hacer pull de
+`a7acae97448c` HU-17 → `f2c2575f005d` HU-20 → `513f8b6b1190` HU-21 → `89c80d804c10` HU-23 →
+`384733dab3de` HU-29 → `239c7e4cb7af` revisión general (fecha de cierre de la orden). Antes de generar una migración nueva, hacer pull de
 `development` para colgarla del último head.
 
 **Tablas que usan otras HU** (no reimplementar sus reglas: llamar a los métodos del dominio):
@@ -211,11 +215,11 @@ PR de `development` → `testing`: #22, #25, #29, #31, #34, #36, #38, #40 y #42 
 | `comparativos`, `comparativo_ofertas` | `id` | `abierto` / `seleccionado` | Foto de ofertas; `ahorro` (RN-060) |
 | `cotizaciones`, `cotizacion_detalles` | `id` | `Generada` / `Enviada` / `Aprobada` / `Rechazada` / `Anulada` | Origen de la orden de compra (HU-21): la cotización `Aprobada` trae proveedor y detalle |
 | `aprobaciones` | `id` | `En revisión` / `Aprobada` / `Rechazada` / `Anulada` | Creada en la HU-17 y ampliada en la HU-20 (aprobador, rol, monto autorizado, fecha, motivo) |
-| `ordenes_compra`, `orden_detalles` | `id` | `emitida` / `confirmada` / `cerrada` / `anulada` | `OrdenCompra.verificar_pagable()` (RN-092, para la HU-23), `valor_total`, `ESTADOS_ABIERTOS`. Pendientes para la HU-23: `OrdenCompraRepository.contar_pagos()` (RN-084) y el cierre (RN-087) |
+| `ordenes_compra`, `orden_detalles` | `id` | `emitida` / `confirmada` / `cerrada` / `anulada` | `verificar_pagable()` (RN-092), `registrar_recepcion()` / `verificar_recibida()` (HU-29), `cerrar_si_completa()` (RN-087: se cierra sola con pago completo y recepción), `ESTADOS_ABIERTOS` |
 
 **Pendientes conocidos:**
-1. RN-040 y RN-025: activadas en la HU-21 (cuentan las órdenes `emitida` o `confirmada`).
-   Queda para la HU-23: `OrdenCompraRepository.contar_pagos()` devuelve 0 hasta que exista la tabla de pagos.
+1. RN-040 y RN-025: activadas en la HU-21 (cuentan las órdenes `emitida` o `confirmada`). Desde la
+   revisión general la orden se cierra sola (RN-087), así que ya no queda abierta para siempre.
 2. Permisos del Coordinador: resuelto (PR #27 y #33). Materiales, proveedores y ofertas usan
    `requiere_permiso("Materiales", ...)`.
 3. Formato del sobre: el Componente F del parcial y todos los issues usan `exito`, `codigo`, `mensaje`,
@@ -223,10 +227,13 @@ PR de `development` → `testing`: #22, #25, #29, #31, #34, #36, #38, #40 y #42 
    **No se cambia nada hasta tener la plantilla exacta del profesor.** Si cambia, se hace solo en la base
    común (`app/core/respuestas.py`, `app/schemas/respuesta.py`, `app/core/errores.py`) y en los
    ejemplos de error de Swagger de los routers.
-4. Siguientes HU: Jaime → todas sus HU terminadas. Alejandro → HU-29 (Inventario) y HU-23 (Pagos).
-   Para pagar, la orden debe estar `confirmada`: `PATCH /api/v1/ordenes-compra/{id}/confirmar` (RN-086).
+4. Las 15 HU están terminadas y en `testing`. Falta: pruebas funcionales con capturas y la
+   documentación final. Ciclo completo de una compra: solicitud → comparativo → cotización → enviar →
+   aprobar → orden → `/confirmar` → pago(s) y `/recepcion` (en cualquier orden) → entrada al inventario.
+   Con el pago completo y la recepción, la orden pasa sola a `cerrada`.
 5. Tope de aprobación del Coordinador (RN-076): `TOPE_APROBACION_COORDINADOR` en `.env`
    (10.000.000 COP por defecto). Por encima solo aprueba el Director.
+6. RN-045: una solicitud con cotización aprobada no se edita ni se anula (409).
 
 **Notas de entorno:**
 - Después de un pull que cambie `requirements.txt`: `pip install -r requirements.txt` (con el venv activo)

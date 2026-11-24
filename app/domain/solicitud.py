@@ -12,6 +12,8 @@
 #   RN-043  Un material no se repite en la misma solicitud.
 #           (además queda la restricción UNIQUE en la BD)
 #   RN-044  Solo el solicitante o el responsable del proyecto pueden editarla (o anularla).
+#   RN-045  Una solicitud con cotización aprobada no puede editarse ni anularse
+#           (ya hay una compra autorizada sobre ella: cambiarla dejaría datos inconsistentes).
 #   Solo se editan o anulan solicitudes en estado pendiente.
 from datetime import datetime, timezone
 from typing import Optional
@@ -102,6 +104,16 @@ class Solicitud(Base):
                 f"Solo el solicitante o el responsable del proyecto pueden modificar "
                 f"la solicitud {self.id}.",
                 regla="RN-044", campo="solicitud_id")
+
+    def verificar_sin_compra_aprobada(self, tiene_cotizacion_aprobada: bool) -> None:
+        """
+        RN-045: una solicitud con cotización aprobada no puede editarse ni anularse (409).
+        El repositorio responde si alguna cotización de sus comparativos ya está Aprobada.
+        """
+        if tiene_cotizacion_aprobada:
+            raise ConflictoEstadoError(
+                "RN-045", f"La solicitud {self.id} tiene una cotización aprobada y ya no puede "
+                          f"editarse ni anularse.", campo="solicitud_id")
 
     def verificar_pendiente(self) -> None:
         """Solo se editan o anulan solicitudes en estado pendiente (409)."""

@@ -48,6 +48,9 @@ class PagoService:
             orden, self.repo.total_pagado(orden.id), datos.monto, datos.moneda,
             datos.metodo_pago, datos.fecha_pago, datos.referencia_pasarela,
             _a_entero(usuario_id), hoy_colombia())
+        # RN-087: si con este pago se completa el valor y la orden ya fue recibida, se cierra.
+        # Se hace antes de guardar para que pago y cierre queden en la misma transacción.
+        orden.cerrar_si_completa(self.repo.total_pagado(orden.id) + pago.monto)
         return self._con_saldo(self.repo.registrar(pago))
 
     def pagos_de_orden(self, orden_compra_id: int) -> PagosOrdenResponse:
