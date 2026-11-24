@@ -27,6 +27,7 @@ ESTADO_INACTIVO = "inactivo"
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
@@ -36,6 +37,11 @@ def _a_dinero(valor: float) -> Decimal:
 
 
 class Categoria(Base):
+    """
+    Agrupa los materiales (Cementos, Acero, Agregados...). Las ocho categorías iniciales las
+    carga la migración de la HU-09; Cementos tiene el id 4 a propósito para el caso 2 del issue.
+    """
+
     __tablename__ = "categorias"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -45,10 +51,17 @@ class Categoria(Base):
     materiales: Mapped[list["Material"]] = relationship(back_populates="categoria")
 
     def esta_activa(self) -> bool:
+        """Solo las categorías activas reciben materiales nuevos (RN-032)."""
         return self.estado == ESTADO_ACTIVO
 
 
 class Material(Base):
+    """
+    Un material del catálogo (tabla materiales): nombre, unidad, categoría, precio de
+    referencia y estado. Es la base de las ofertas de proveedores, las solicitudes, los
+    comparativos, las cotizaciones y el inventario.
+    """
+
     __tablename__ = "materiales"
     __table_args__ = (
         # RN-031 también en la BD: misma categoría + nombre + unidad no se repite
@@ -132,6 +145,7 @@ class Material(Base):
         self.precio_referencia = _a_dinero(nuevo)
 
     def esta_activo(self) -> bool:
+        """True si el material se puede usar en solicitudes y compras (RN-034)."""
         return self.estado == ESTADO_ACTIVO
 
     def cambiar_estado(self, nuevo_estado: str) -> None:

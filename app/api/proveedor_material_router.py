@@ -27,6 +27,10 @@ MODULO = "Materiales"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> ProveedorMaterialService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return ProveedorMaterialService(ProveedorMaterialRepository(db))
 
 
@@ -34,6 +38,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> ProveedorMaterialService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str]) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -89,6 +97,10 @@ ERROR_422_PRECIO = _ejemplo_error(
 def asociar_material(proveedor_id: int, datos: OfertaCreate, response: Response,
                      servicio: ProveedorMaterialService = Depends(obtener_servicio),
                      usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
+    """
+    POST /api/v1/proveedores/{proveedor_id}/materiales: registra la oferta (201) o, si ya
+    existía, la actualiza (200). Por eso el código HTTP se cambia en `response`.
+    """
     oferta, creada = servicio.asociar(proveedor_id, datos)
     if creada:
         return respuesta_exitosa(oferta, "Oferta registrada correctamente.")
@@ -109,5 +121,8 @@ def proveedores_de_material(
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: ProveedorMaterialService = Depends(obtener_servicio),
         usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """
+    GET /api/v1/materiales/{material_id}/proveedores: proveedores activos que ofrecen el material.
+    """
     items, paginacion = servicio.proveedores_de_material(material_id, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)

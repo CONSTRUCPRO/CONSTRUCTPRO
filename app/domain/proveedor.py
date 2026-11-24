@@ -23,10 +23,16 @@ ESTADO_INACTIVO = "inactivo"
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
 class Proveedor(Base):
+    """
+    Un proveedor de materiales (tabla proveedores): razón social, NIT único, contacto y estado.
+    Recibe órdenes de compra (HU-21) y presenta ofertas de materiales (HU-11).
+    """
+
     __tablename__ = "proveedores"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -60,6 +66,7 @@ class Proveedor(Base):
         self.correo = correo
 
     def esta_activo(self) -> bool:
+        """True si el proveedor puede ofertar y recibir órdenes."""
         return self.estado == ESTADO_ACTIVO
 
     def cambiar_estado(self, nuevo_estado: str, ordenes_abiertas: int) -> None:
