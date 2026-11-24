@@ -13,19 +13,29 @@ from app.domain.solicitud import Solicitud
 
 
 class ComparativoRepository:
+    """
+    Acceso a datos de comparativos: solo consulta y guarda en la BD.
+    No valida reglas de negocio ni sabe de HTTP; eso es del dominio y del servicio.
+    """
 
     def __init__(self, db: Session):
+        """
+        Recibe la sesión de BD de la petición; todas las consultas de este repositorio la usan.
+        """
         self.db = db
 
     # ── Consultas ──────────────────────────────────────────
 
     def obtener_por_id(self, comparativo_id: int) -> Optional[Comparativo]:
+        """El comparativo con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Comparativo, comparativo_id)
 
     def obtener_solicitud(self, solicitud_id: int) -> Optional[Solicitud]:
+        """La solicitud con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Solicitud, solicitud_id)
 
     def obtener_material(self, material_id: int) -> Optional[Material]:
+        """El material con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Material, material_id)
 
     def existe(self, solicitud_id: int, material_id: int) -> bool:

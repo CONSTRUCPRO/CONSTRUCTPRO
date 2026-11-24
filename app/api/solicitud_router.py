@@ -22,6 +22,10 @@ MODULO = "Solicitudes"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> SolicitudService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return SolicitudService(SolicitudRepository(db))
 
 
@@ -29,6 +33,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> SolicitudService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str]) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -89,6 +97,7 @@ ERROR_422_DETALLE = _ejemplo_error(
 def crear_solicitud(datos: SolicitudCreate,
                     servicio: SolicitudService = Depends(obtener_servicio),
                     usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
+    """POST /api/v1/solicitudes: crea la solicitud (201)."""
     return respuesta_exitosa(servicio.crear(datos, usuario.usuario_id),
                              "Solicitud creada correctamente.")
 
@@ -106,6 +115,7 @@ def listar_solicitudes(
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: SolicitudService = Depends(obtener_servicio),
         usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/solicitudes: lista paginada con filtros."""
     items, paginacion = servicio.listar(proyecto_id, estado, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
 
@@ -117,6 +127,7 @@ def listar_solicitudes(
 def obtener_solicitud(solicitud_id: int,
                       servicio: SolicitudService = Depends(obtener_servicio),
                       usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/solicitudes/{solicitud_id}: una solicitud con su detalle."""
     return respuesta_exitosa(servicio.obtener(solicitud_id), "Consulta realizada correctamente.")
 
 
@@ -130,6 +141,9 @@ def obtener_solicitud(solicitud_id: int,
 def editar_solicitud(solicitud_id: int, datos: SolicitudUpdate,
                      servicio: SolicitudService = Depends(obtener_servicio),
                      usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+    """
+    PUT /api/v1/solicitudes/{solicitud_id}: reemplaza el detalle (quién puede lo decide la RN-044).
+    """
     return respuesta_exitosa(servicio.editar(solicitud_id, datos, usuario.usuario_id),
                              "Solicitud actualizada correctamente.")
 
@@ -142,5 +156,6 @@ def editar_solicitud(solicitud_id: int, datos: SolicitudUpdate,
 def anular_solicitud(solicitud_id: int,
                      servicio: SolicitudService = Depends(obtener_servicio),
                      usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+    """PATCH /api/v1/solicitudes/{solicitud_id}/anular: anula la solicitud."""
     return respuesta_exitosa(servicio.anular(solicitud_id, usuario.usuario_id),
                              "Solicitud anulada correctamente.")

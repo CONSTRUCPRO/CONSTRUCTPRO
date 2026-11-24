@@ -33,10 +33,18 @@ ORDENES = ("precio", "dias_entrega")
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
 class Comparativo(Base):
+    """
+    El comparativo de precios de un material de una solicitud (tabla comparativos). Guarda
+    una "foto" de las ofertas en comparativo_ofertas: si el proveedor cambia su precio
+    después, el comparativo y el ahorro no cambian. Al seleccionar una oferta queda listo
+    para la cotización (HU-17).
+    """
+
     __tablename__ = "comparativos"
     __table_args__ = (
         # Un solo comparativo por material de cada solicitud (el ahorro no se cuenta dos veces)

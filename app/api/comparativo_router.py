@@ -22,6 +22,10 @@ MODULO = "Cotizaciones"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> ComparativoService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return ComparativoService(ComparativoRepository(db))
 
 
@@ -29,6 +33,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> ComparativoService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str]) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -90,6 +98,7 @@ ERROR_422_SELECCION = _ejemplo_error(
 def generar_comparativo(datos: ComparativoCreate,
                         servicio: ComparativoService = Depends(obtener_servicio),
                         usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
+    """POST /api/v1/comparativos: genera el comparativo (201)."""
     return respuesta_exitosa(servicio.generar(datos), "Comparativo generado correctamente.")
 
 
@@ -108,6 +117,7 @@ def obtener_comparativo(
         dias_max: Optional[int] = Query(None, ge=0, description="Máximo de días de entrega"),
         servicio: ComparativoService = Depends(obtener_servicio),
         usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/comparativos/{comparativo_id}: consulta, ordena y filtra las ofertas."""
     return respuesta_exitosa(servicio.obtener(comparativo_id, orden, disponible, dias_max),
                              "Consulta realizada correctamente.")
 
@@ -123,5 +133,8 @@ def obtener_comparativo(
 def seleccionar_oferta(comparativo_id: int, datos: SeleccionDatos,
                        servicio: ComparativoService = Depends(obtener_servicio),
                        usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "editar"))):
+    """
+    PATCH /api/v1/comparativos/{comparativo_id}/seleccion: elige la oferta y calcula el ahorro.
+    """
     return respuesta_exitosa(servicio.seleccionar(comparativo_id, datos),
                              "Oferta seleccionada correctamente.")

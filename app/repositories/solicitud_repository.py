@@ -14,19 +14,29 @@ from app.domain.usuario import Usuario
 
 
 class SolicitudRepository:
+    """
+    Acceso a datos de solicitudes: solo consulta y guarda en la BD.
+    No valida reglas de negocio ni sabe de HTTP; eso es del dominio y del servicio.
+    """
 
     def __init__(self, db: Session):
+        """
+        Recibe la sesión de BD de la petición; todas las consultas de este repositorio la usan.
+        """
         self.db = db
 
     # ── Consultas ──────────────────────────────────────────
 
     def obtener_por_id(self, solicitud_id: int) -> Optional[Solicitud]:
+        """La solicitud con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Solicitud, solicitud_id)
 
     def obtener_proyecto(self, proyecto_id: int) -> Optional[Proyecto]:
+        """El proyecto con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Proyecto, proyecto_id)
 
     def obtener_usuario(self, usuario_id: int) -> Optional[Usuario]:
+        """El usuario con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Usuario, usuario_id)
 
     def obtener_materiales(self, ids: list[int]) -> dict[int, Material]:
