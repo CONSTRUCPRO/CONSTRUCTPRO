@@ -5,6 +5,7 @@ from typing import Optional
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.domain.orden_compra import ESTADOS_ABIERTOS, OrdenCompra
 from app.domain.proveedor import Proveedor
 
 
@@ -27,13 +28,13 @@ class ProveedorRepository:
 
     def contar_ordenes_abiertas(self, proveedor_id: int) -> int:
         """
-        Apoya la RN-040: cuántas órdenes de compra abiertas tiene el proveedor.
-        PENDIENTE HU-21 (Jaime): la tabla de órdenes de compra todavía no existe,
-        así que por ahora devuelve 0. Cuando exista, aquí se cuentan las órdenes
-        de este proveedor en estado abierto (ej. "emitida"). El servicio y el
-        dominio ya usan este valor, así que solo cambia este método.
+        Apoya la RN-040: cuántas órdenes de compra abiertas (emitidas o confirmadas)
+        tiene el proveedor. Activada en la HU-21.
         """
-        return 0
+        return self.db.scalar(
+            select(func.count(OrdenCompra.id))
+            .where(OrdenCompra.proveedor_id == proveedor_id, OrdenCompra.estado.in_(ESTADOS_ABIERTOS))
+        )
 
     def listar(self, estado: Optional[str], razon_social: Optional[str],
                pagina: int, por_pagina: int) -> tuple[list[Proveedor], int]:
