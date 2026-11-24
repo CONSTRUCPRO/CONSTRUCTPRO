@@ -40,10 +40,11 @@ class OrdenCompraRepository:
 
     def contar_envios(self, orden_id: int) -> int:
         """
-        Apoya la RN-084. Los envíos son del módulo de Logística, que no está en este sprint:
-        devuelve 0 hasta que exista esa tabla.
+        Apoya la RN-084. Los envíos son del módulo de Logística, que no está en este sprint;
+        mientras tanto cuenta la recepción de la HU-29: una orden recibida no se anula.
         """
-        return 0
+        orden = self.db.get(OrdenCompra, orden_id)
+        return 1 if orden is not None and orden.fecha_recepcion is not None else 0
 
     def listar(self, proyecto_id: Optional[int], proveedor_id: Optional[int], estado: Optional[str],
                pagina: int, por_pagina: int) -> tuple[list[OrdenCompra], int]:
