@@ -8,6 +8,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 # ── ENTRADA ───────────────────────────────────────────────
 
 class LoginDatos(BaseModel):
+    """Datos del login: correo y contraseña."""
+
     model_config = ConfigDict(json_schema_extra={"example": {
         "correo": "admin@construpro.co",
         "contrasena": "Admin2026",
@@ -19,10 +21,13 @@ class LoginDatos(BaseModel):
     @field_validator("correo")
     @classmethod
     def normalizar_correo(cls, v: str) -> str:
+        """El correo se compara en minúscula y sin espacios, como se guardó."""
         return v.strip().lower()
 
 
 class RenovarDatos(BaseModel):
+    """El token de renovación que entregó el login, para pedir tokens nuevos."""
+
     model_config = ConfigDict(json_schema_extra={"example": {
         "token_renovacion": "pegue aquí el token_renovacion que entregó el login",
     }})

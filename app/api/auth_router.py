@@ -19,6 +19,10 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Autenticación"])
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> AuthService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return AuthService(SesionRepository(db))
 
 
@@ -26,6 +30,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> AuthService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str] = None) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -67,6 +75,7 @@ ERROR_401_TOKEN = _ejemplo_error(
                          "En Swagger: copie `token_acceso`, pulse **Authorize** (candado) y péguelo.",
              responses={401: ERROR_401_CREDENCIALES})
 def iniciar_sesion(datos: LoginDatos, servicio: AuthService = Depends(obtener_servicio)):
+    """POST /api/v1/auth/login: valida credenciales y entrega los tokens (no pide token)."""
     return respuesta_exitosa(servicio.iniciar_sesion(datos), "Inicio de sesión exitoso.")
 
 
@@ -78,6 +87,7 @@ def iniciar_sesion(datos: LoginDatos, servicio: AuthService = Depends(obtener_se
                          "token de acceso ya haya vencido.",
              responses={401: ERROR_401_RENOVACION})
 def renovar(datos: RenovarDatos, servicio: AuthService = Depends(obtener_servicio)):
+    """POST /api/v1/auth/refresh: nuevos tokens a partir del token de renovación."""
     return respuesta_exitosa(servicio.renovar(datos), "Token renovado correctamente.")
 
 
@@ -88,5 +98,6 @@ def renovar(datos: RenovarDatos, servicio: AuthService = Depends(obtener_servici
              responses={401: ERROR_401_TOKEN})
 def cerrar_sesion(servicio: AuthService = Depends(obtener_servicio),
                   usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+    """POST /api/v1/auth/logout: cierra la sesión del token con el que se llama."""
     servicio.cerrar_sesion(usuario.sesion_id)
     return respuesta_exitosa(None, "Sesión cerrada correctamente.")

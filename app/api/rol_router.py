@@ -22,6 +22,10 @@ solo_administrador = requiere_rol("Administrador", regla="RN-014")
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> RolService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return RolService(RolRepository(db))
 
 
@@ -49,6 +53,7 @@ def listar_roles(estado: Optional[Literal["activo", "inactivo"]] = None,
 def obtener_rol(rol_id: int,
                 servicio: RolService = Depends(obtener_servicio),
                 usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+    """Devuelve un rol con sus permisos."""
     return respuesta_exitosa(servicio.obtener(rol_id), "Consulta realizada correctamente.")
 
 
@@ -75,6 +80,7 @@ def asignar_permisos(rol_id: int, datos: PermisosUpdate,
 def consultar_permisos(rol_id: int,
                        servicio: RolService = Depends(obtener_servicio),
                        usuario: UsuarioActual = Depends(obtener_usuario_actual)):
+    """Devuelve solo los permisos del rol, agrupados por módulo."""
     return respuesta_exitosa(servicio.consultar_permisos(rol_id),
                              "Consulta realizada correctamente.")
 
