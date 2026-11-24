@@ -21,6 +21,10 @@ MODULO = "Ordenes de compra"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> OrdenCompraService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return OrdenCompraService(OrdenCompraRepository(db))
 
 
@@ -28,6 +32,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> OrdenCompraService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str] = None) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -81,6 +89,7 @@ ERROR_409_CONFIRMAR = _ejemplo_error(
 def generar_orden(datos: OrdenCompraCreate,
                   servicio: OrdenCompraService = Depends(obtener_servicio),
                   usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
+    """POST /api/v1/ordenes-compra: genera la orden desde una aprobación (201)."""
     return respuesta_exitosa(servicio.generar(datos, usuario.usuario_id),
                              "Orden de compra generada correctamente.")
 
@@ -98,6 +107,7 @@ def listar_ordenes(
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: OrdenCompraService = Depends(obtener_servicio),
         usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/ordenes-compra: lista paginada con filtros."""
     items, paginacion = servicio.listar(proyecto_id, proveedor_id, estado, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
 
@@ -109,6 +119,7 @@ def listar_ordenes(
 def obtener_orden(orden_compra_id: int,
                   servicio: OrdenCompraService = Depends(obtener_servicio),
                   usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/ordenes-compra/{orden_compra_id}: la orden con su detalle."""
     return respuesta_exitosa(servicio.obtener(orden_compra_id), "Consulta realizada correctamente.")
 
 
@@ -122,6 +133,9 @@ def obtener_orden(orden_compra_id: int,
 def confirmar_orden(orden_compra_id: int,
                     servicio: OrdenCompraService = Depends(obtener_servicio),
                     usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
+    """
+    PATCH /api/v1/ordenes-compra/{orden_compra_id}/confirmar: registra la confirmación del proveedor.
+    """
     return respuesta_exitosa(servicio.confirmar(orden_compra_id), "Orden de compra confirmada.")
 
 
@@ -135,5 +149,8 @@ def anular_orden(orden_compra_id: int,
                  datos: Optional[AnulacionDatos] = Body(None),
                  servicio: OrdenCompraService = Depends(obtener_servicio),
                  usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "anular"))):
+    """
+    PATCH /api/v1/ordenes-compra/{orden_compra_id}/anular: anula y libera el presupuesto. El cuerpo es opcional.
+    """
     return respuesta_exitosa(servicio.anular(orden_compra_id, datos or AnulacionDatos()),
                              "Orden de compra anulada.")

@@ -11,16 +11,25 @@ from app.domain.pago import ESTADO_REGISTRADO, Pago
 
 
 class PagoRepository:
+    """
+    Acceso a datos de pagos: solo consulta y guarda en la BD.
+    No valida reglas de negocio ni sabe de HTTP; eso es del dominio y del servicio.
+    """
 
     def __init__(self, db: Session):
+        """
+        Recibe la sesión de BD de la petición; todas las consultas de este repositorio la usan.
+        """
         self.db = db
 
     # ── Consultas ──────────────────────────────────────────
 
     def obtener_por_id(self, pago_id: int) -> Optional[Pago]:
+        """El pago con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Pago, pago_id)
 
     def obtener_orden(self, orden_compra_id: int) -> Optional[OrdenCompra]:
+        """La orden con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(OrdenCompra, orden_compra_id)
 
     def total_pagado(self, orden_compra_id: int) -> Decimal:
@@ -49,6 +58,10 @@ class PagoRepository:
         return pago
 
     def guardar(self, pago: Pago) -> Pago:
+        """
+        Guarda el pago (por ejemplo, al anularlo) (nuevo o modificado): add + commit, y refresh para recargar lo que puso
+        la BD (id, fechas). Sirve igual para crear y para actualizar.
+        """
         self.db.add(pago)
         self.db.commit()
         self.db.refresh(pago)

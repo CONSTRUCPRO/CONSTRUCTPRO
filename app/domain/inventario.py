@@ -30,10 +30,12 @@ _PLURALES = {"bulto": "bultos", "tonelada": "toneladas", "unidad": "unidades",
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
 def en_plural(unidad: str, cantidad: int) -> str:
+    """Unidad en plural para los mensajes ('1 bulto', '40 bultos')."""
     return unidad if cantidad == 1 else _PLURALES.get(unidad, unidad)
 
 

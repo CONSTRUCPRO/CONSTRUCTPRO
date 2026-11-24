@@ -12,19 +12,29 @@ from app.domain.proveedor import Proveedor
 
 
 class OrdenCompraRepository:
+    """
+    Acceso a datos de órdenes de compra: solo consulta y guarda en la BD.
+    No valida reglas de negocio ni sabe de HTTP; eso es del dominio y del servicio.
+    """
 
     def __init__(self, db: Session):
+        """
+        Recibe la sesión de BD de la petición; todas las consultas de este repositorio la usan.
+        """
         self.db = db
 
     # ── Consultas ──────────────────────────────────────────
 
     def obtener_por_id(self, orden_id: int) -> Optional[OrdenCompra]:
+        """La orden con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(OrdenCompra, orden_id)
 
     def obtener_aprobacion(self, aprobacion_id: int) -> Optional[Aprobacion]:
+        """La aprobación con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Aprobacion, aprobacion_id)
 
     def obtener_proveedor(self, proveedor_id: int) -> Optional[Proveedor]:
+        """El proveedor con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Proveedor, proveedor_id)
 
     def orden_de_cotizacion(self, cotizacion_id: int) -> Optional[OrdenCompra]:
@@ -48,6 +58,9 @@ class OrdenCompraRepository:
 
     def listar(self, proyecto_id: Optional[int], proveedor_id: Optional[int], estado: Optional[str],
                pagina: int, por_pagina: int) -> tuple[list[OrdenCompra], int]:
+        """
+        Órdenes de la página pedida (la más reciente primero) con filtros por proyecto, proveedor y estado.
+        """
         consulta = select(OrdenCompra)
         if proyecto_id:
             consulta = consulta.where(OrdenCompra.proyecto_id == proyecto_id)

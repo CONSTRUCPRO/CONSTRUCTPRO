@@ -45,10 +45,18 @@ ESTADOS_ABIERTOS = (ESTADO_EMITIDA, ESTADO_CONFIRMADA)
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
 class OrdenCompra(Base):
+    """
+    La orden de compra al proveedor (tabla ordenes_compra), con sus líneas en orden_detalles.
+    Nace de una aprobación Aprobada y copia exactamente lo aprobado (RN-082).
+    Estados: emitida -> confirmada (el proveedor la acepta) -> cerrada (pagada y recibida,
+    RN-087), o anulada. Una orden abierta es emitida o confirmada.
+    """
+
     __tablename__ = "ordenes_compra"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -107,6 +115,7 @@ class OrdenCompra(Base):
         return orden
 
     def esta_abierta(self) -> bool:
+        """True si la orden sigue en curso (emitida o confirmada)."""
         return self.estado in ESTADOS_ABIERTOS
 
     def _verificar_modificable(self) -> None:
