@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.domain.aprobacion import Aprobacion
 from app.domain.orden_compra import OrdenCompra
+from app.domain.pago import ESTADO_REGISTRADO, Pago
 from app.domain.proveedor import Proveedor
 
 
@@ -32,8 +33,6 @@ class OrdenCompraRepository:
 
     def contar_pagos(self, orden_id: int) -> int:
         """Apoya la RN-084: pagos vigentes (no anulados) de la orden (HU-23)."""
-        # Import local: pago.py importa orden_compra.py, así se evita un import circular.
-        from app.domain.pago import ESTADO_REGISTRADO, Pago
         return self.db.scalar(
             select(func.count()).select_from(Pago)
             .where(Pago.orden_compra_id == orden_id, Pago.estado == ESTADO_REGISTRADO)
