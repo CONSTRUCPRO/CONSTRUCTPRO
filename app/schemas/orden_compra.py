@@ -38,7 +38,7 @@ class LineaOrdenResponse(BaseModel):
 
 
 class OrdenCompraResponse(BaseModel):
-    """Campos del ejemplo del issue, más subtotal, IVA y las fechas de confirmación y anulación."""
+    """Campos del ejemplo del issue, más subtotal, IVA y las fechas de confirmación, anulación y cierre."""
     orden_compra_id: str
     aprobacion_id: str
     cotizacion_id: str
@@ -54,6 +54,7 @@ class OrdenCompraResponse(BaseModel):
     fecha_confirmacion: Optional[str]
     fecha_anulacion: Optional[str]
     motivo_anulacion: Optional[str]
+    fecha_cierre: Optional[str]          # RN-087: pagada por completo y recibida
     detalle: list[LineaOrdenResponse]
 
     @classmethod
@@ -73,5 +74,6 @@ class OrdenCompraResponse(BaseModel):
             fecha_confirmacion=fecha_iso(o.fecha_confirmacion),
             fecha_anulacion=fecha_iso(o.fecha_anulacion),
             motivo_anulacion=o.motivo_anulacion,
+            fecha_cierre=fecha_iso(o.fecha_cierre),
             detalle=[LineaOrdenResponse.desde_modelo(d) for d in o.detalle],
         )
