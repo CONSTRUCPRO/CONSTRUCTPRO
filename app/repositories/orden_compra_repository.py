@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.domain.aprobacion import Aprobacion
 from app.domain.orden_compra import OrdenCompra
+from app.domain.pago import ESTADO_REGISTRADO, Pago
 from app.domain.proveedor import Proveedor
 
 
@@ -31,19 +32,19 @@ class OrdenCompraRepository:
         return self.db.scalar(select(OrdenCompra).where(OrdenCompra.cotizacion_id == cotizacion_id))
 
     def contar_pagos(self, orden_id: int) -> int:
-        """
-        Apoya la RN-084. PENDIENTE HU-23 (Alejandro): la tabla de pagos todavía no existe,
-        así que devuelve 0. Cuando exista, aquí se cuentan los pagos vigentes de la orden;
-        el servicio y el dominio ya usan este valor, así que solo cambia este método.
-        """
-        return 0
+        """Apoya la RN-084: pagos vigentes (no anulados) de la orden (HU-23)."""
+        return self.db.scalar(
+            select(func.count()).select_from(Pago)
+            .where(Pago.orden_compra_id == orden_id, Pago.estado == ESTADO_REGISTRADO)
+        ) or 0
 
     def contar_envios(self, orden_id: int) -> int:
         """
-        Apoya la RN-084. Los envíos son del módulo de Logística, que no está en este sprint:
-        devuelve 0 hasta que exista esa tabla.
+        Apoya la RN-084. Los envíos son del módulo de Logística, que no está en este sprint;
+        mientras tanto cuenta la recepción de la HU-29: una orden recibida no se anula.
         """
-        return 0
+        orden = self.db.get(OrdenCompra, orden_id)
+        return 1 if orden is not None and orden.fecha_recepcion is not None else 0
 
     def listar(self, proyecto_id: Optional[int], proveedor_id: Optional[int], estado: Optional[str],
                pagina: int, por_pagina: int) -> tuple[list[OrdenCompra], int]:
