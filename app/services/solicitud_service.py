@@ -88,6 +88,8 @@ class SolicitudService:
         solicitud = self._buscar(solicitud_id)                          # 404
         solicitud.verificar_autor(usuario.id)                           # RN-044 (403)
         solicitud.verificar_pendiente()                                 # 409
+        solicitud.verificar_sin_compra_aprobada(
+            self.repo.tiene_cotizacion_aprobada(solicitud.id))          # RN-045 (409)
         lineas = self._lineas(datos.detalle)                            # RN-042, RN-043, 404
         solicitud.editar(usuario.id, lineas)                            # RN-034
         return SolicitudResponse.desde_modelo(self.repo.guardar(solicitud))
@@ -95,5 +97,8 @@ class SolicitudService:
     def anular(self, solicitud_id: int, usuario_id: Optional[str]) -> SolicitudResponse:
         usuario = self._usuario_actual(usuario_id)                      # 401
         solicitud = self._buscar(solicitud_id)                          # 404
+        solicitud.verificar_autor(usuario.id)                           # RN-044 (403)
+        solicitud.verificar_sin_compra_aprobada(
+            self.repo.tiene_cotizacion_aprobada(solicitud.id))          # RN-045 (409)
         solicitud.anular(usuario.id)                                    # RN-044, pendiente
         return SolicitudResponse.desde_modelo(self.repo.guardar(solicitud))

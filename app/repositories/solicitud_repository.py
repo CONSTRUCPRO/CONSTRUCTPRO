@@ -5,6 +5,8 @@ from typing import Optional
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
+from app.domain.comparativo import Comparativo
+from app.domain.cotizacion import ESTADO_APROBADA, Cotizacion, CotizacionDetalle
 from app.domain.material import Material
 from app.domain.proyecto import Proyecto
 from app.domain.solicitud import Solicitud, SolicitudDetalle
@@ -31,6 +33,20 @@ class SolicitudRepository:
         """Devuelve {id: Material} de los que existan (los que falten no aparecen)."""
         materiales = self.db.scalars(select(Material).where(Material.id.in_(ids))).all()
         return {m.id: m for m in materiales}
+
+    def tiene_cotizacion_aprobada(self, solicitud_id: int) -> bool:
+        """
+        Apoya la RN-045: ¿alguna cotización hecha con los comparativos de esta solicitud
+        ya está Aprobada? (solicitud -> comparativos -> cotizacion_detalles -> cotizaciones)
+        """
+        consulta = (
+            select(Cotizacion.id)
+            .join(CotizacionDetalle, CotizacionDetalle.cotizacion_id == Cotizacion.id)
+            .join(Comparativo, Comparativo.id == CotizacionDetalle.comparativo_id)
+            .where(Comparativo.solicitud_id == solicitud_id, Cotizacion.estado == ESTADO_APROBADA)
+            .limit(1)
+        )
+        return self.db.scalar(consulta) is not None
 
     def listar(self, proyecto_id: Optional[int], estado: Optional[str],
                pagina: int, por_pagina: int) -> tuple[list[Solicitud], int]:
