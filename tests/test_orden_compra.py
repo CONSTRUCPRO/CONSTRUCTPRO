@@ -1,6 +1,8 @@
 # tests/test_orden_compra.py
 # Pruebas unitarias de la HU-21 Orden de Compra (RN-039, RN-069, RN-081 a RN-084, RN-086, RN-089,
 # RN-092) y de las reglas que activa en otras HU: RN-040 (proveedor) y RN-025 (proyecto).
+# Incluye las pruebas de la revisión general: cierre automático de la orden (RN-087) y
+# solicitud con cotización aprobada (RN-045).
 # BD SQLite en memoria: no tocan dev.db.
 # Ejecutar desde la raíz del proyecto:  python -m unittest discover -s tests -v
 import unittest
@@ -21,19 +23,27 @@ from app.domain.solicitud import Solicitud, SolicitudDetalle
 from app.domain.usuario import Usuario
 from app.repositories.aprobacion_repository import AprobacionRepository
 from app.repositories.cotizacion_repository import CotizacionRepository
+from app.repositories.inventario_repository import InventarioRepository
 from app.repositories.orden_compra_repository import OrdenCompraRepository
+from app.repositories.pago_repository import PagoRepository
 from app.repositories.proveedor_repository import ProveedorRepository
 from app.repositories.proyecto_repository import ProyectoRepository
 from app.schemas.aprobacion import DecisionDatos
 from app.schemas.cotizacion import CotizacionCreate
 from app.schemas.orden_compra import AnulacionDatos, OrdenCompraCreate
+from app.schemas.pago import AnulacionPago, PagoCreate
+from app.schemas.solicitud import SolicitudUpdate
 from app.schemas.proveedor import EstadoProveedorUpdate
 from app.schemas.proyecto import EstadoProyectoUpdate
 from app.services.aprobacion_service import AprobacionService
 from app.services.cotizacion_service import CotizacionService
+from app.services.inventario_service import InventarioService
 from app.services.orden_compra_service import OrdenCompraService
+from app.services.pago_service import PagoService
 from app.services.proveedor_service import ProveedorService
 from app.services.proyecto_service import ProyectoService
+from app.repositories.solicitud_repository import SolicitudRepository
+from app.services.solicitud_service import SolicitudService
 
 COORDINADOR, DIRECTOR = "2", "3"
 
@@ -226,6 +236,66 @@ class PruebaOrdenCompra(unittest.TestCase):
         self.assertEqual(len(self.servicio.listar(None, None, "anulada", 1, 20)[0]), 0)
         with self.assertRaises(RecursoNoEncontradoError):
             self.servicio.obtener(999)
+
+    # ── Revisión general: cierre de la orden (RN-087) y RN-045 ─────────
+
+    def pagar(self, monto: float):
+        return PagoService(PagoRepository(self.db)).registrar(
+            PagoCreate(orden_compra_id=1, monto=monto, metodo_pago="transferencia",
+                       fecha_pago=date.today()), "5")
+
+    def recibir(self):
+        return InventarioService(InventarioRepository(self.db)).registrar_recepcion(1, "1")
+
+    def test_rn087_se_cierra_al_pagar_todo_despues_de_recibir(self):
+        self.servicio.generar(orden(self.compra()), COORDINADOR)
+        self.servicio.confirmar(1)
+        self.recibir()
+        self.pagar(10000000)                                             # pago parcial
+        self.assertEqual(self.servicio.obtener(1).estado, "confirmada")
+        self.pagar(4815500)                                              # completa el valor
+        o = self.servicio.obtener(1)
+        self.assertEqual(o.estado, "cerrada")
+        self.assertIsNotNone(o.fecha_cierre)
+
+    def test_rn087_se_cierra_al_recibir_si_ya_estaba_pagada(self):
+        self.servicio.generar(orden(self.compra()), COORDINADOR)
+        self.servicio.confirmar(1)
+        self.pagar(14815500)
+        self.assertEqual(self.servicio.obtener(1).estado, "confirmada")  # falta la recepción
+        self.assertEqual(self.recibir().estado, "cerrada")
+
+    def test_orden_cerrada_libera_proyecto_y_proveedor(self):
+        self.servicio.generar(orden(self.compra()), COORDINADOR)
+        self.servicio.confirmar(1)
+        self.recibir()
+        self.pagar(14815500)
+        # Ya no cuenta como abierta: RN-025 y RN-040 dejan finalizar e inactivar
+        ProveedorService(ProveedorRepository(self.db)).cambiar_estado(
+            8, EstadoProveedorUpdate(estado="inactivo"))
+        self.assertEqual(ProyectoService(ProyectoRepository(self.db)).cambiar_estado(
+            27, EstadoProyectoUpdate(estado="finalizado")).estado, "finalizado")
+
+    def test_rn089_no_se_anula_un_pago_de_orden_cerrada(self):
+        self.servicio.generar(orden(self.compra()), COORDINADOR)
+        self.servicio.confirmar(1)
+        self.recibir()
+        pago = self.pagar(14815500)
+        with self.assertRaises(ConflictoEstadoError) as ctx:
+            PagoService(PagoRepository(self.db)).anular(int(pago.pago_id), AnulacionPago())
+        self.assertEqual(ctx.exception.regla, "RN-089")
+
+    def test_rn045_solicitud_con_cotizacion_aprobada_no_se_modifica(self):
+        solicitudes = SolicitudService(SolicitudRepository(self.db))
+        self.compra(aprobar=False)                                      # en revisión: aún se puede
+        self.assertFalse(SolicitudRepository(self.db).tiene_cotizacion_aprobada(305))
+        self.aprobaciones.decidir(1, DecisionDatos(decision="aprobada"), DIRECTOR)
+        with self.assertRaises(ConflictoEstadoError) as ctx:
+            solicitudes.editar(305, SolicitudUpdate(detalle=[{"material_id": 1, "cantidad": 5}]), "1")
+        self.assertEqual(ctx.exception.regla, "RN-045")
+        with self.assertRaises(ConflictoEstadoError) as ctx:
+            solicitudes.anular(305, "1")
+        self.assertEqual(ctx.exception.regla, "RN-045")
 
 
 if __name__ == "__main__":
