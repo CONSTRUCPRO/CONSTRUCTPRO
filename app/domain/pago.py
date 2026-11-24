@@ -19,6 +19,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.domain.excepciones import ConflictoEstadoError, ReglaNegocioError
+from app.domain.orden_compra import ESTADO_CERRADA as ESTADO_ORDEN_CERRADA
 from app.domain.orden_compra import OrdenCompra
 from app.domain.presupuesto import MONEDA, a_dinero, formato_cop
 
@@ -118,6 +119,10 @@ class Pago(Base):
         if self.estado == ESTADO_ANULADO:
             raise ConflictoEstadoError(
                 None, f"El pago {self.id} ya está anulado.", campo="estado")
+        if self.orden.estado == ESTADO_ORDEN_CERRADA:                       # RN-089
+            raise ConflictoEstadoError(
+                "RN-089", f"La orden {self.orden_compra_id} ya está cerrada (pagada y recibida); "
+                          f"sus pagos no pueden anularse.", campo="pago_id")
         registrado = dia_colombia(self.fecha_registro)
         if registrado != hoy:                                              # RN-094
             raise ConflictoEstadoError(
