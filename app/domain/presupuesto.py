@@ -32,6 +32,7 @@ MONEDA = "COP"
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
@@ -48,6 +49,14 @@ def formato_cop(valor) -> str:
 
 
 class Presupuesto(Base):
+    """
+    El presupuesto de un proyecto (tabla presupuestos, uno por proyecto).
+
+    Lleva tres montos: presupuesto_total (lo asignado), comprometido (compras aprobadas que
+    aún no se pagan) y ejecutado (lo ya pagado). El saldo disponible sale de restar los dos
+    últimos. Aprobaciones, órdenes y pagos mueven el dinero con los métodos de esta clase.
+    """
+
     __tablename__ = "presupuestos"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -68,10 +77,12 @@ class Presupuesto(Base):
 
     @property
     def comprometido_y_ejecutado(self) -> Decimal:
+        """Lo que ya está usado del presupuesto: comprometido + ejecutado."""
         return (self.comprometido or Decimal("0")) + (self.ejecutado or Decimal("0"))
 
     @property
     def saldo_disponible(self) -> Decimal:
+        """saldo_disponible = presupuesto_total - comprometido - ejecutado (FUN-022)."""
         return a_dinero(self.presupuesto_total) - self.comprometido_y_ejecutado
 
     # ── Reglas de negocio ─────────────────────────────────

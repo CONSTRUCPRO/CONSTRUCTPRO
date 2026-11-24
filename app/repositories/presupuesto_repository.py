@@ -9,8 +9,15 @@ from app.domain.proyecto import Proyecto
 
 
 class PresupuestoRepository:
+    """
+    Acceso a datos de presupuestos (se llega al presupuesto a través del proyecto): solo consulta y guarda en la BD.
+    No valida reglas de negocio ni sabe de HTTP; eso es del dominio y del servicio.
+    """
 
     def __init__(self, db: Session):
+        """
+        Recibe la sesión de BD de la petición; todas las consultas de este repositorio la usan.
+        """
         self.db = db
 
     def obtener_proyecto(self, proyecto_id: int) -> Optional[Proyecto]:

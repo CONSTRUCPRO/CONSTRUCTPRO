@@ -39,10 +39,17 @@ ROLES_RESPONSABLE = ("coordinador", "director")
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
 class Proyecto(Base):
+    """
+    Una obra de la constructora (tabla proyectos): datos generales, fechas, responsable,
+    estado (activo, suspendido o finalizado) y ubicación. Es el punto de partida de todo el
+    abastecimiento: las solicitudes, el presupuesto y las órdenes cuelgan de un proyecto.
+    """
+
     __tablename__ = "proyectos"
     __table_args__ = (
         UniqueConstraint("cliente", "nombre", name="uq_proyecto_cliente_nombre"),  # RN-018
@@ -139,6 +146,9 @@ class Proyecto(Base):
         self.longitud = longitud
 
     def tiene_ubicacion(self) -> bool:
+        """
+        La ubicación cuenta como registrada si hay dirección y ciudad (las coordenadas son opcionales).
+        """
         return bool(self.direccion and self.ciudad)
 
     def asignar_responsable(self, usuario: Optional[Usuario], responsable_id: int) -> None:
