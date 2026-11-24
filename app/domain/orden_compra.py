@@ -17,6 +17,9 @@
 #
 # Para otras HU (no reimplementar):
 #   verificar_pagable()  RN-092: solo se pagan órdenes confirmadas (HU-23, Alejandro).
+#   registrar_recepcion() y verificar_recibida(): recepción física de la orden en la obra
+#                        (HU-29, Alejandro). RN-112 guarda quién recibe; RN-121 exige la recepción
+#                        para que el material entre al inventario.
 #   ESTADOS_ABIERTOS     órdenes que cuentan para RN-040 (proveedor) y RN-025 (proyecto).
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -28,7 +31,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.domain.aprobacion import ESTADO_APROBADA as APROBACION_APROBADA
 from app.domain.aprobacion import Aprobacion
-from app.domain.excepciones import ConflictoEstadoError
+from app.domain.excepciones import ConflictoEstadoError, ReglaNegocioError
 from app.domain.material import Material
 from app.domain.proveedor import Proveedor
 
@@ -60,6 +63,10 @@ class OrdenCompra(Base):
     fecha_confirmacion: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     fecha_anulacion: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     motivo_anulacion: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    # HU-29: recepción física del material en la obra (la registra el almacenista, RN-112)
+    fecha_recepcion: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    recibida_por_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("usuarios.id", name="fk_ordenes_compra_recibida_por_id"), nullable=True)
 
     aprobacion: Mapped[Aprobacion] = relationship()
     proveedor: Mapped[Proveedor] = relationship()
@@ -136,6 +143,35 @@ class OrdenCompra(Base):
             raise ConflictoEstadoError(
                 "RN-092", f"La orden {self.id} está {self.estado}; solo se registran pagos sobre "
                           f"órdenes confirmadas por el proveedor.", campo="orden_compra_id")
+
+    def registrar_recepcion(self, usuario_id: Optional[int]) -> None:
+        """
+        HU-29: el material de la orden llegó a la obra. Solo órdenes confirmadas y una sola vez.
+        RN-089: una orden anulada o cerrada no admite cambios (409). RN-112: guarda quién recibe.
+        """
+        self._verificar_modificable()                                      # RN-089
+        if self.estado != ESTADO_CONFIRMADA:
+            raise ConflictoEstadoError(
+                None, f"La orden {self.id} está {self.estado}; solo se registra la recepción de "
+                      f"órdenes confirmadas por el proveedor.", campo="estado")
+        if self.fecha_recepcion is not None:
+            raise ConflictoEstadoError(
+                None, f"La recepción de la orden {self.id} ya fue registrada.",
+                campo="orden_compra_id")
+        if usuario_id is None:                                             # RN-112
+            raise ReglaNegocioError(
+                "RN-112", "La recepción debe registrar el responsable que recibe.",
+                campo="recibida_por_id")
+        self.fecha_recepcion = _ahora_utc()
+        self.recibida_por_id = usuario_id
+
+    def verificar_recibida(self) -> None:
+        """Para la HU-29. RN-121: el inventario solo se actualiza con la recepción confirmada (409)."""
+        if self.fecha_recepcion is None:
+            raise ConflictoEstadoError(
+                "RN-121", f"La orden {self.id} no tiene la recepción confirmada; registre primero "
+                          f"la recepción del material.", campo="orden_compra_id",
+                codigo="NEG_RECEPCION_NO_CONFIRMADA")
 
 
 class OrdenDetalle(Base):
