@@ -93,9 +93,24 @@ def registrar_manejadores(app: FastAPI) -> None:
     @app.exception_handler(StarletteHTTPException)
     async def manejar_error_http(request: Request, exc: StarletteHTTPException):
         codigo = _CODIGOS_HTTP.get(exc.status_code, "VAL_FORMATO_INVALIDO")
+        mensaje = CATALOGO_MENSAJES[codigo]
+        errores = None
+        ruta = f"{request.method} {request.url.path}"
+        if exc.status_code == 404:
+            # La ruta no existe (los 404 de negocio llegan como ConstruProError, no por aquí)
+            errores = [{"campo": "ruta", "codigo": codigo, "regla": None,
+                        "mensaje": f"La ruta {ruta} no existe. Consulte /docs."}]
+        elif exc.status_code == 405:
+            # Método no permitido: por ejemplo DELETE, que no existe porque los registros no
+            # se eliminan, se inactivan o anulan (RN-005, RN-035). El catálogo (Tabla 57) no
+            # tiene un código propio para esto, así que se usa el de formato con un mensaje claro.
+            mensaje = "El método usado no está permitido en esta ruta."
+            errores = [{"campo": "metodo", "codigo": codigo, "regla": None,
+                        "mensaje": f"{ruta} no está permitido. Consulte /docs para ver los "
+                                   f"métodos disponibles en esta ruta."}]
         return JSONResponse(
             status_code=exc.status_code,
-            content=respuesta_error(codigo, CATALOGO_MENSAJES[codigo]),
+            content=respuesta_error(codigo, mensaje, errores),
             headers=getattr(exc, "headers", None),
         )
 
