@@ -123,3 +123,9 @@ class Presupuesto(Base):
         valor = a_dinero(monto)
         self.comprometido = max(Decimal("0"), (self.comprometido or Decimal("0")) - valor)
         self.ejecutado = (self.ejecutado or Decimal("0")) + valor
+
+    def revertir_ejecucion(self, monto: float) -> None:
+        """HU-23: al anular un pago, el valor vuelve de ejecutado a comprometido (inverso de ejecutar)."""
+        valor = a_dinero(monto)
+        self.ejecutado = max(Decimal("0"), (self.ejecutado or Decimal("0")) - valor)
+        self.comprometido = (self.comprometido or Decimal("0")) + valor
