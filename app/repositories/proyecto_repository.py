@@ -5,6 +5,7 @@ from typing import Optional
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
+from app.domain.orden_compra import ESTADOS_ABIERTOS, OrdenCompra
 from app.domain.proyecto import Proyecto
 from app.domain.usuario import Usuario
 
@@ -36,12 +37,14 @@ class ProyectoRepository:
 
     def contar_compromisos_abiertos(self, proyecto_id: int) -> int:
         """
-        Apoya la RN-025: órdenes de compra abiertas o pagos pendientes del proyecto.
-        PENDIENTE HU-21 / HU-23: esas tablas todavía no existen, así que por ahora
-        devuelve 0. Cuando existan, aquí se cuentan; el servicio y el dominio ya usan
-        este valor, así que solo cambia este método.
+        Apoya la RN-025: órdenes de compra abiertas (emitidas o confirmadas) del proyecto.
+        Activada en la HU-21. Una orden con pagos pendientes sigue abierta hasta que se
+        cierre, así que este conteo también cubre los pagos pendientes (HU-23).
         """
-        return 0
+        return self.db.scalar(
+            select(func.count(OrdenCompra.id))
+            .where(OrdenCompra.proyecto_id == proyecto_id, OrdenCompra.estado.in_(ESTADOS_ABIERTOS))
+        )
 
     def listar(self, estado: Optional[str], ciudad: Optional[str], cliente: Optional[str],
                responsable_id: Optional[int], pagina: int,

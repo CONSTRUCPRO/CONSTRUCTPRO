@@ -185,14 +185,15 @@ en el PR de la HU-09. Todo vive en `app/`.
 | HU-12 Registro de Solicitud de Materiales (#9) | Alejandro | En `testing` | #35 |
 | HU-16 Comparativo de Precios (#10) | Alejandro | En `testing` | #37 |
 | HU-17 Generación de Cotización (#11) | Alejandro | En `testing` | #39 |
-| HU-20 Decisión de Aprobación (#12) | Jaime | PR abierto | — |
+| HU-20 Decisión de Aprobación (#12) | Jaime | En `testing` | #41 |
+| HU-21 Generación de Orden de Compra (#13) | Jaime | PR abierto | — |
 
-PR de `development` → `testing`: #22, #25, #29, #31, #34, #36, #38 y #40 (uno por cada integración).
+PR de `development` → `testing`: #22, #25, #29, #31, #34, #36, #38, #40 y #42 (uno por cada integración).
 
 **Migraciones (un solo head):** `a3f1c9e2b7d4` HU-03 → `246dbe7806b2` HU-09 → `c6694196e06d` HU-10 →
 `173f32cdf2cd` HU-01 → `9dcb06782bba` HU-11 → `e4a0a96d3d9a` permisos Coordinador → `02a74136ff30` HU-05 →
 `4a68f0bd7455` HU-06 → `323d9a89d28e` HU-02 → `7fb1455f410f` HU-12 → `6e5fa281e3b8` HU-16 →
-`a7acae97448c` HU-17 → `f2c2575f005d` HU-20. Antes de generar una migración nueva, hacer pull de
+`a7acae97448c` HU-17 → `f2c2575f005d` HU-20 → `513f8b6b1190` HU-21. Antes de generar una migración nueva, hacer pull de
 `development` para colgarla del último head.
 
 **Tablas que usan otras HU** (no reimplementar sus reglas: llamar a los métodos del dominio):
@@ -210,10 +211,11 @@ PR de `development` → `testing`: #22, #25, #29, #31, #34, #36, #38 y #40 (uno 
 | `comparativos`, `comparativo_ofertas` | `id` | `abierto` / `seleccionado` | Foto de ofertas; `ahorro` (RN-060) |
 | `cotizaciones`, `cotizacion_detalles` | `id` | `Generada` / `Enviada` / `Aprobada` / `Rechazada` / `Anulada` | Origen de la orden de compra (HU-21): la cotización `Aprobada` trae proveedor y detalle |
 | `aprobaciones` | `id` | `En revisión` / `Aprobada` / `Rechazada` / `Anulada` | Creada en la HU-17 y ampliada en la HU-20 (aprobador, rol, monto autorizado, fecha, motivo) |
+| `ordenes_compra`, `orden_detalles` | `id` | `emitida` / `confirmada` / `cerrada` / `anulada` | `OrdenCompra.verificar_pagable()` (RN-092, para la HU-23), `valor_total`, `ESTADOS_ABIERTOS`. Pendientes para la HU-23: `OrdenCompraRepository.contar_pagos()` (RN-084) y el cierre (RN-087) |
 
 **Pendientes conocidos:**
-1. `ProveedorRepository.contar_ordenes_abiertas()` devuelve 0 de forma fija (`PENDIENTE HU-21`). Jaime
-   lo implementa en la HU-21 para activar la RN-040.
+1. RN-040 y RN-025: activadas en la HU-21 (cuentan las órdenes `emitida` o `confirmada`).
+   Queda para la HU-23: `OrdenCompraRepository.contar_pagos()` devuelve 0 hasta que exista la tabla de pagos.
 2. Permisos del Coordinador: resuelto (PR #27 y #33). Materiales, proveedores y ofertas usan
    `requiere_permiso("Materiales", ...)`.
 3. Formato del sobre: el Componente F del parcial y todos los issues usan `exito`, `codigo`, `mensaje`,
@@ -221,8 +223,8 @@ PR de `development` → `testing`: #22, #25, #29, #31, #34, #36, #38 y #40 (uno 
    **No se cambia nada hasta tener la plantilla exacta del profesor.** Si cambia, se hace solo en la base
    común (`app/core/respuestas.py`, `app/schemas/respuesta.py`, `app/core/errores.py`) y en los
    ejemplos de error de Swagger de los routers.
-4. Siguientes HU: Jaime → HU-21 Orden de Compra (desbloquea la HU-23 de Alejandro).
-   Alejandro → HU-29 (Inventario) y HU-23 (Pagos, cuando exista la HU-21).
+4. Siguientes HU: Jaime → todas sus HU terminadas. Alejandro → HU-29 (Inventario) y HU-23 (Pagos).
+   Para pagar, la orden debe estar `confirmada`: `PATCH /api/v1/ordenes-compra/{id}/confirmar` (RN-086).
 5. Tope de aprobación del Coordinador (RN-076): `TOPE_APROBACION_COORDINADOR` en `.env`
    (10.000.000 COP por defecto). Por encima solo aprueba el Director.
 
