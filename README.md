@@ -46,7 +46,7 @@ pip install -r requirements.txt
 main.py                  punto de entrada: crea la app y registra los routers
 app/
   api/                   capa API: routers (endpoints HTTP)
-  schemas/               esquemas Pydantic de entrada (XxxCreate) y salida (XxxResponse)
+    schemas/             esquemas Pydantic de entrada (XxxCreate) y salida (XxxResponse)
   services/              capa Servicio: casos de uso y orquestación
   domain/                capa Dominio: modelos (tablas) y reglas de negocio (RN-xxx)
   repositories/          capa Repositorio: acceso a datos con SQLAlchemy

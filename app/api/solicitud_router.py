@@ -10,8 +10,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, obtener_usuario_actual, requiere_permiso
 from app.repositories.solicitud_repository import SolicitudRepository
-from app.schemas.respuesta import Respuesta
-from app.schemas.solicitud import SolicitudCreate, SolicitudResponse, SolicitudUpdate
+from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.solicitud import SolicitudCreate, SolicitudResponse, SolicitudUpdate
 from app.services.solicitud_service import SolicitudService
 
 router = APIRouter(prefix="/api/v1/solicitudes", tags=["Solicitudes"])

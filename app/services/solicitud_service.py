@@ -11,7 +11,7 @@ from app.domain.proyecto import Proyecto
 from app.domain.solicitud import Solicitud
 from app.domain.usuario import Usuario
 from app.repositories.solicitud_repository import SolicitudRepository
-from app.schemas.solicitud import LineaSolicitud, SolicitudCreate, SolicitudResponse, SolicitudUpdate
+from app.api.schemas.solicitud import LineaSolicitud, SolicitudCreate, SolicitudResponse, SolicitudUpdate
 
 
 class SolicitudService:

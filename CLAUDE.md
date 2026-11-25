@@ -86,7 +86,7 @@ main.py                    # crea la app; registra routers automáticamente
 app/
   core/                    # config.py (settings), database.py (engine, SessionLocal, Base, get_db)
   api/                     # routers: <modulo>_router.py con una variable `router`
-  schemas/                 # Pydantic: <modulo>.py con XxxCreate / XxxUpdate / XxxResponse
+    schemas/               # Pydantic: <modulo>.py con XxxCreate / XxxUpdate / XxxResponse
   services/                # casos de uso: <modulo>_service.py (sin FastAPI, sin HTTP)
   repositories/            # acceso a datos con Session de SQLAlchemy: <modulo>_repository.py
   domain/                  # modelos SQLAlchemy (heredan de Base) + reglas de negocio + excepciones
@@ -135,7 +135,7 @@ cambia, manda el código del repo.
   sobre `{exito, codigo, mensaje, datos, errores, meta{timestamp, version, peticion_id, paginacion}}`.
   `construir_paginacion(pagina, por_pagina, total_registros)` arma `meta.paginacion`.
   `fecha_iso(valor)` formatea fechas: datetime → `"2026-09-14T15:04:32Z"`, date → `"2026-09-14"`, None → None.
-- `app/schemas/respuesta.py`: `Respuesta[T]`, el modelo Pydantic genérico del sobre, para Swagger.
+- `app/api/schemas/respuesta.py`: `Respuesta[T]`, el modelo Pydantic genérico del sobre, para Swagger.
   Se usa así: `@router.post("", response_model=Respuesta[MaterialResponse], status_code=201)` y
   `response_model=Respuesta[list[MaterialResponse]]`.
 - `app/core/errores.py`: `registrar_manejadores(app)`, que se llama una vez en `main.py`. Convierte en sobre
@@ -225,7 +225,7 @@ PR de `development` → `testing`: #22, #25, #29, #31, #34, #36, #38, #40 y #42 
 3. Formato del sobre: el Componente F del parcial y todos los issues usan `exito`, `codigo`, `mensaje`,
    `datos`, `errores` y `meta`. Alejandro recuerda que el profesor pidió `success`/`message`/`data`.
    **No se cambia nada hasta tener la plantilla exacta del profesor.** Si cambia, se hace solo en la base
-   común (`app/core/respuestas.py`, `app/schemas/respuesta.py`, `app/core/errores.py`) y en los
+   común (`app/core/respuestas.py`, `app/api/schemas/respuesta.py`, `app/core/errores.py`) y en los
    ejemplos de error de Swagger de los routers.
 4. Las 15 HU están terminadas y en `testing`. Falta: pruebas funcionales con capturas y la
    documentación final. Ciclo completo de una compra: solicitud → comparativo → cotización → enviar →
@@ -314,10 +314,10 @@ class Herramienta(Base):
         self.estado = "inactivo"
 ```
 
-### `app/schemas/herramienta.py`
+### `app/api/schemas/herramienta.py`
 
 ```python
-# app/schemas/herramienta.py
+# app/api/schemas/herramienta.py
 # Esquemas Pydantic: validan la ENTRADA y definen la forma de la SALIDA (datos del sobre).
 from typing import Optional
 
@@ -419,7 +419,7 @@ from app.core.respuestas import construir_paginacion
 from app.domain.excepciones import RecursoDuplicadoError, RecursoNoEncontradoError
 from app.domain.herramienta import Herramienta
 from app.repositories.herramienta_repository import HerramientaRepository
-from app.schemas.herramienta import HerramientaCreate, HerramientaResponse, PrecioUpdate
+from app.api.schemas.herramienta import HerramientaCreate, HerramientaResponse, PrecioUpdate
 
 
 class HerramientaService:
@@ -478,8 +478,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, obtener_usuario_actual, requiere_rol
 from app.repositories.herramienta_repository import HerramientaRepository
-from app.schemas.herramienta import HerramientaCreate, HerramientaResponse, PrecioUpdate
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.herramienta import HerramientaCreate, HerramientaResponse, PrecioUpdate
+from app.api.schemas.respuesta import Respuesta
 from app.services.herramienta_service import HerramientaService
 
 router = APIRouter(prefix="/api/v1/herramientas", tags=["Herramientas"])

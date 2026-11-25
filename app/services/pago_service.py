@@ -8,7 +8,7 @@ from app.domain.excepciones import RecursoNoEncontradoError
 from app.domain.orden_compra import OrdenCompra
 from app.domain.pago import Pago, hoy_colombia
 from app.repositories.pago_repository import PagoRepository
-from app.schemas.pago import AnulacionPago, PagoCreate, PagoResponse, PagosOrdenResponse
+from app.api.schemas.pago import AnulacionPago, PagoCreate, PagoResponse, PagosOrdenResponse
 
 
 def _a_entero(usuario_id: Optional[str]) -> Optional[int]:

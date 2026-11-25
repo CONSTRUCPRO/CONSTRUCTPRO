@@ -7,7 +7,7 @@ from app.core.respuestas import construir_paginacion
 from app.domain.excepciones import RecursoDuplicadoError, RecursoNoEncontradoError
 from app.domain.rol import Rol
 from app.repositories.rol_repository import RolRepository
-from app.schemas.rol import (EstadoRolUpdate, PermisosRolResponse, PermisosUpdate,
+from app.api.schemas.rol import (EstadoRolUpdate, PermisosRolResponse, PermisosUpdate,
                              RolCreate, RolResponse, RolUpdate)
 
 

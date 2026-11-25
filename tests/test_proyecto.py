@@ -20,7 +20,7 @@ from app.domain.presupuesto import Presupuesto
 from app.domain.rol import Rol
 from app.domain.usuario import Usuario
 from app.repositories.proyecto_repository import ProyectoRepository
-from app.schemas.proyecto import (
+from app.api.schemas.proyecto import (
     EstadoProyectoUpdate,
     ProyectoCreate,
     ProyectoUpdate,

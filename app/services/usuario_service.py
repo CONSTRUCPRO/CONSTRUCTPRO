@@ -8,7 +8,7 @@ from app.core.respuestas import construir_paginacion
 from app.domain.excepciones import RecursoDuplicadoError, RecursoNoEncontradoError
 from app.domain.usuario import Usuario
 from app.repositories.usuario_repository import UsuarioRepository
-from app.schemas.usuario import (
+from app.api.schemas.usuario import (
     EstadoUsuarioUpdate,
     RolUsuarioUpdate,
     UsuarioCreate,

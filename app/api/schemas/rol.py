@@ -1,4 +1,4 @@
-# app/schemas/rol.py
+# app/api/schemas/rol.py
 # Esquemas Pydantic de la HU-03: validan la entrada y definen la salida.
 from typing import Literal, Optional
 

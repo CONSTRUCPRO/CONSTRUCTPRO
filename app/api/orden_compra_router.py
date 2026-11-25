@@ -12,8 +12,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.orden_compra_repository import OrdenCompraRepository
-from app.schemas.orden_compra import AnulacionDatos, OrdenCompraCreate, OrdenCompraResponse
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.orden_compra import AnulacionDatos, OrdenCompraCreate, OrdenCompraResponse
+from app.api.schemas.respuesta import Respuesta
 from app.services.orden_compra_service import OrdenCompraService
 
 router = APIRouter(prefix="/api/v1/ordenes-compra", tags=["Órdenes de compra"])

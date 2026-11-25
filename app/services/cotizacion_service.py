@@ -9,7 +9,7 @@ from app.domain.aprobacion import Aprobacion
 from app.domain.cotizacion import Cotizacion, hoy_utc
 from app.domain.excepciones import ConflictoEstadoError, RecursoNoEncontradoError
 from app.repositories.cotizacion_repository import CotizacionRepository
-from app.schemas.cotizacion import CotizacionCreate, CotizacionResponse
+from app.api.schemas.cotizacion import CotizacionCreate, CotizacionResponse
 
 
 def _a_entero(usuario_id: Optional[str]) -> Optional[int]:

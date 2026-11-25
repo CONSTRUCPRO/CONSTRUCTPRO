@@ -23,7 +23,7 @@ from app.domain.proyecto import Proyecto
 from app.domain.rol import Rol
 from app.domain.usuario import Usuario
 from app.repositories.solicitud_repository import SolicitudRepository
-from app.schemas.solicitud import SolicitudCreate, SolicitudUpdate
+from app.api.schemas.solicitud import SolicitudCreate, SolicitudUpdate
 from app.services.solicitud_service import SolicitudService
 
 

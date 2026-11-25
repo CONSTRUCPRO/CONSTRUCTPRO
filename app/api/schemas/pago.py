@@ -1,4 +1,4 @@
-# app/schemas/pago.py
+# app/api/schemas/pago.py
 # Esquemas Pydantic: validan la FORMA de la entrada y definen la forma de la SALIDA
 # (lo que va dentro de "datos" en el sobre estándar).
 # Las reglas RN-091 a RN-095 NO van aquí: van en el dominio, para que el error llegue con su regla.

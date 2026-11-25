@@ -12,7 +12,7 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.proyecto_repository import ProyectoRepository
-from app.schemas.proyecto import (
+from app.api.schemas.proyecto import (
     EstadoProyectoUpdate,
     ProyectoCreate,
     ProyectoResponse,
@@ -20,7 +20,7 @@ from app.schemas.proyecto import (
     ResponsableUpdate,
     UbicacionDatos,
 )
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Respuesta
 from app.services.proyecto_service import ProyectoService
 
 router = APIRouter(prefix="/api/v1/proyectos", tags=["Proyectos"])

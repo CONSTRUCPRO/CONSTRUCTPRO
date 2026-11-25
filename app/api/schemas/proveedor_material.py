@@ -1,4 +1,4 @@
-# app/schemas/proveedor_material.py
+# app/api/schemas/proveedor_material.py
 # Esquemas Pydantic: validan la FORMA de la entrada y definen la forma de la SALIDA
 # (lo que va dentro de "datos" en el sobre estándar).
 # RN-038 (precio > 0) NO va aquí: va en el dominio, para que el error llegue con su regla.

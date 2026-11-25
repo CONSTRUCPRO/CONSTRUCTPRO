@@ -12,8 +12,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.usuario_repository import UsuarioRepository
-from app.schemas.respuesta import Respuesta
-from app.schemas.usuario import (
+from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.usuario import (
     EstadoUsuarioUpdate,
     RolUsuarioUpdate,
     UsuarioCreate,

@@ -25,7 +25,7 @@ from app.domain.rol import Rol
 from app.domain.solicitud import Solicitud, SolicitudDetalle
 from app.domain.usuario import Usuario
 from app.repositories.comparativo_repository import ComparativoRepository
-from app.schemas.comparativo import ComparativoCreate, SeleccionDatos
+from app.api.schemas.comparativo import ComparativoCreate, SeleccionDatos
 from app.services.comparativo_service import ComparativoService
 
 

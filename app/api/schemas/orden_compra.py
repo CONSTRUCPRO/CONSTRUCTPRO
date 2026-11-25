@@ -1,4 +1,4 @@
-# app/schemas/orden_compra.py
+# app/api/schemas/orden_compra.py
 # Esquemas Pydantic de la HU-21: entrada (generar y anular) y salida (la orden con su detalle).
 from typing import Optional
 

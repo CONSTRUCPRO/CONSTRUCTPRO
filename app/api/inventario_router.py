@@ -12,7 +12,7 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.inventario_repository import InventarioRepository
-from app.schemas.inventario import (
+from app.api.schemas.inventario import (
     EntradaCreate,
     EntradaResponse,
     ExistenciaResponse,
@@ -20,7 +20,7 @@ from app.schemas.inventario import (
     RecepcionResponse,
     SalidaCreate,
 )
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Respuesta
 from app.services.inventario_service import InventarioService
 
 router = APIRouter(tags=["Inventario"])

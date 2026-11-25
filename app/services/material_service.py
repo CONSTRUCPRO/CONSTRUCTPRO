@@ -8,7 +8,7 @@ from app.core.respuestas import construir_paginacion
 from app.domain.excepciones import RecursoDuplicadoError, RecursoNoEncontradoError
 from app.domain.material import Categoria, Material
 from app.repositories.material_repository import MaterialRepository
-from app.schemas.material import (
+from app.api.schemas.material import (
     EstadoUpdate,
     MaterialCreate,
     MaterialResponse,

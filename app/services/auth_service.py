@@ -9,7 +9,7 @@ from app.domain.excepciones import NoAutenticadoError
 from app.domain.sesion import Sesion, nuevo_token_renovacion
 from app.domain.usuario import ahora_utc_sin_zona
 from app.repositories.sesion_repository import SesionRepository
-from app.schemas.auth import LoginDatos, RenovarDatos, SesionResponse
+from app.api.schemas.auth import LoginDatos, RenovarDatos, SesionResponse
 
 # Mismo mensaje para correo inexistente y contraseña errada: no se revela cuál falló.
 MENSAJE_CREDENCIALES = "Las credenciales enviadas no coinciden con ningún usuario activo."

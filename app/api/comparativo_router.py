@@ -10,8 +10,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.comparativo_repository import ComparativoRepository
-from app.schemas.comparativo import ComparativoCreate, ComparativoResponse, SeleccionDatos
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.comparativo import ComparativoCreate, ComparativoResponse, SeleccionDatos
+from app.api.schemas.respuesta import Respuesta
 from app.services.comparativo_service import ComparativoService
 
 router = APIRouter(prefix="/api/v1/comparativos", tags=["Comparativo de precios"])

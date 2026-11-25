@@ -10,8 +10,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.cotizacion_repository import CotizacionRepository
-from app.schemas.cotizacion import CotizacionCreate, CotizacionResponse
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.cotizacion import CotizacionCreate, CotizacionResponse
+from app.api.schemas.respuesta import Respuesta
 from app.services.cotizacion_service import CotizacionService
 
 router = APIRouter(prefix="/api/v1/cotizaciones", tags=["Cotizaciones"])

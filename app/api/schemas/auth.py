@@ -1,4 +1,4 @@
-# app/schemas/auth.py
+# app/api/schemas/auth.py
 # Esquemas Pydantic de la HU-02: entrada del login y la renovación, y salida de la sesión.
 from typing import Optional
 

@@ -1,4 +1,4 @@
-# app/schemas/aprobacion.py
+# app/api/schemas/aprobacion.py
 # Esquemas Pydantic de la HU-20: la decisión (entrada) y la aprobación (salida).
 from typing import Optional
 
