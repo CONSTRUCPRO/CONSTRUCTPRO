@@ -36,6 +36,7 @@ TIPOS_DOCUMENTO = ("CC", "CE", "TI", "PA", "NIT")
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
@@ -45,6 +46,12 @@ def ahora_utc_sin_zona() -> datetime:
 
 
 class Usuario(Base):
+    """
+    Un usuario del sistema (tabla usuarios). Guarda sus datos, el hash de la contraseña
+    (nunca la contraseña), su rol, su estado y lo que usa la HU-02 para las sesiones:
+    version_sesion (RN-009), intentos_fallidos y bloqueado_hasta (RN-007).
+    """
+
     __tablename__ = "usuarios"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -112,6 +119,7 @@ class Usuario(Base):
         self.rol = rol
 
     def esta_activo(self) -> bool:
+        """True si el usuario puede entrar al sistema (estado 'activo')."""
         return self.estado == ESTADO_ACTIVO
 
     def cambiar_estado(self, nuevo_estado: str, usuario_actual_id: Optional[str]) -> None:

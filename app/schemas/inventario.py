@@ -34,6 +34,9 @@ class SalidaCreate(BaseModel):
     @field_validator("motivo")
     @classmethod
     def limpiar_motivo(cls, v: str) -> str:
+        """
+        El motivo de la salida es obligatorio: sin espacios de más y con al menos 3 caracteres.
+        """
         v = " ".join(v.split())
         if len(v) < 3:
             raise ValueError("El motivo debe tener al menos 3 caracteres.")
@@ -43,6 +46,8 @@ class SalidaCreate(BaseModel):
 # ── SALIDA ────────────────────────────────────────────────
 
 class MovimientoResponse(BaseModel):
+    """Un movimiento del inventario con la existencia antes y después (trazabilidad)."""
+
     movimiento_id: str
     tipo: str                          # entrada | salida
     proyecto_id: str
@@ -58,6 +63,10 @@ class MovimientoResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, m: MovimientoInventario) -> "MovimientoResponse":
+        """
+        Convierte el modelo de BD de un movimiento de inventario en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(
             movimiento_id=str(m.id), tipo=m.tipo, proyecto_id=str(m.proyecto_id),
             material_id=str(m.material_id), cantidad=m.cantidad, unidad=m.material.unidad,
@@ -77,6 +86,8 @@ class EntradaResponse(BaseModel):
 
 
 class ExistenciaResponse(BaseModel):
+    """La existencia actual de un material en el proyecto."""
+
     proyecto_id: str
     material_id: str
     material: str
@@ -86,6 +97,10 @@ class ExistenciaResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, i: Inventario) -> "ExistenciaResponse":
+        """
+        Convierte el modelo de BD de una existencia en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(proyecto_id=str(i.proyecto_id), material_id=str(i.material_id),
                    material=i.material.nombre, unidad=i.material.unidad, existencia=i.existencia,
                    fecha_actualizacion=fecha_iso(i.fecha_actualizacion))
@@ -102,6 +117,10 @@ class RecepcionResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, o: OrdenCompra) -> "RecepcionResponse":
+        """
+        Convierte el modelo de BD de la recepción de una orden en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(orden_compra_id=str(o.id), proyecto_id=str(o.proyecto_id),
                    proveedor_id=str(o.proveedor_id), estado=o.estado,
                    fecha_recepcion=fecha_iso(o.fecha_recepcion),

@@ -27,6 +27,10 @@ router = APIRouter(prefix="/api/v1/proyectos", tags=["Proyectos"])
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> ProyectoService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return ProyectoService(ProyectoRepository(db))
 
 
@@ -34,6 +38,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> ProyectoService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str] = None) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -97,6 +105,7 @@ ERROR_422_RESPONSABLE = _ejemplo_error(
 def crear_proyecto(datos: ProyectoCreate,
                    servicio: ProyectoService = Depends(obtener_servicio),
                    usuario: UsuarioActual = Depends(requiere_permiso("Proyectos", "crear"))):
+    """POST /api/v1/proyectos: registra un proyecto (201)."""
     return respuesta_exitosa(servicio.crear(datos), "Proyecto registrado correctamente.")
 
 
@@ -114,6 +123,7 @@ def listar_proyectos(
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: ProyectoService = Depends(obtener_servicio),
         usuario: UsuarioActual = Depends(requiere_permiso("Proyectos", "consultar"))):
+    """GET /api/v1/proyectos: lista paginada con filtros."""
     proyectos, paginacion = servicio.listar(estado, ciudad, cliente, responsable_id,
                                             pagina, por_pagina)
     return respuesta_exitosa(proyectos, "Consulta realizada correctamente.", paginacion)
@@ -126,6 +136,7 @@ def listar_proyectos(
 def obtener_proyecto(proyecto_id: int,
                      servicio: ProyectoService = Depends(obtener_servicio),
                      usuario: UsuarioActual = Depends(requiere_permiso("Proyectos", "consultar"))):
+    """GET /api/v1/proyectos/{proyecto_id}: un proyecto."""
     return respuesta_exitosa(servicio.obtener(proyecto_id), "Consulta realizada correctamente.")
 
 
@@ -139,6 +150,7 @@ def obtener_proyecto(proyecto_id: int,
 def editar_proyecto(proyecto_id: int, datos: ProyectoUpdate,
                     servicio: ProyectoService = Depends(obtener_servicio),
                     usuario: UsuarioActual = Depends(requiere_permiso("Proyectos", "editar"))):
+    """PUT /api/v1/proyectos/{proyecto_id}: edita los datos generales."""
     return respuesta_exitosa(servicio.editar(proyecto_id, datos),
                              "Proyecto actualizado correctamente.")
 
@@ -152,6 +164,7 @@ def editar_proyecto(proyecto_id: int, datos: ProyectoUpdate,
 def registrar_ubicacion(proyecto_id: int, datos: UbicacionDatos,
                         servicio: ProyectoService = Depends(obtener_servicio),
                         usuario: UsuarioActual = Depends(requiere_permiso("Proyectos", "editar"))):
+    """PUT /api/v1/proyectos/{proyecto_id}/ubicacion: registra la ubicación de la obra."""
     return respuesta_exitosa(servicio.registrar_ubicacion(proyecto_id, datos),
                              "Ubicación registrada correctamente.")
 
@@ -165,6 +178,7 @@ def registrar_ubicacion(proyecto_id: int, datos: UbicacionDatos,
 def asignar_responsable(proyecto_id: int, datos: ResponsableUpdate,
                         servicio: ProyectoService = Depends(obtener_servicio),
                         usuario: UsuarioActual = Depends(requiere_permiso("Proyectos", "editar"))):
+    """PATCH /api/v1/proyectos/{proyecto_id}/responsable: cambia el responsable."""
     return respuesta_exitosa(servicio.asignar_responsable(proyecto_id, datos),
                              "Responsable asignado correctamente.")
 
@@ -178,5 +192,6 @@ def asignar_responsable(proyecto_id: int, datos: ResponsableUpdate,
 def cambiar_estado(proyecto_id: int, datos: EstadoProyectoUpdate,
                    servicio: ProyectoService = Depends(obtener_servicio),
                    usuario: UsuarioActual = Depends(requiere_permiso("Proyectos", "editar"))):
+    """PATCH /api/v1/proyectos/{proyecto_id}/estado: suspende, reactiva o finaliza."""
     return respuesta_exitosa(servicio.cambiar_estado(proyecto_id, datos),
                              "Estado del proyecto actualizado correctamente.")

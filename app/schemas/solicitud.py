@@ -14,6 +14,8 @@ from app.domain.solicitud import Solicitud, SolicitudDetalle
 # ── ENTRADA ───────────────────────────────────────────────
 
 class LineaSolicitud(BaseModel):
+    """Una línea del pedido: qué material y cuántas unidades (entero mayor que cero, RN-042)."""
+
     material_id: int = Field(..., description="Identificador del material del catálogo")
     cantidad: int = Field(..., description="Cantidad solicitada (mayor que cero, RN-042)")
 
@@ -47,6 +49,8 @@ class SolicitudUpdate(BaseModel):
 # ── SALIDA ────────────────────────────────────────────────
 
 class LineaSolicitudResponse(BaseModel):
+    """Una línea en la respuesta, con el nombre y la unidad del material."""
+
     material_id: str
     nombre: str
     cantidad: int
@@ -54,11 +58,17 @@ class LineaSolicitudResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, d: SolicitudDetalle) -> "LineaSolicitudResponse":
+        """
+        Convierte el modelo de BD de una línea de la solicitud en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(material_id=str(d.material_id), nombre=d.material.nombre,
                    cantidad=d.cantidad, unidad=d.material.unidad)
 
 
 class SolicitudResponse(BaseModel):
+    """Una solicitud con su detalle."""
+
     solicitud_id: str
     proyecto_id: str
     solicitante_id: str
@@ -69,6 +79,10 @@ class SolicitudResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, s: Solicitud) -> "SolicitudResponse":
+        """
+        Convierte el modelo de BD de una solicitud en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(
             solicitud_id=str(s.id),
             proyecto_id=str(s.proyecto_id),

@@ -41,10 +41,17 @@ ROL_DIRECTOR = "director"
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
 class Aprobacion(Base):
+    """
+    La aprobación de una cotización enviada (tabla aprobaciones). La abre la HU-17 al enviar
+    ("En revisión") y la decide la HU-20 ("Aprobada" o "Rechazada"), guardando quién decidió,
+    con qué rol, cuándo, por cuánto y, si rechazó, el motivo (RN-079, RN-077).
+    """
+
     __tablename__ = "aprobaciones"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -72,6 +79,7 @@ class Aprobacion(Base):
                    enviado_por_id=enviado_por_id)
 
     def esta_en_revision(self) -> bool:
+        """True mientras nadie la haya decidido ni se haya anulado la cotización."""
         return self.estado == ESTADO_EN_REVISION
 
     def cancelar(self) -> None:

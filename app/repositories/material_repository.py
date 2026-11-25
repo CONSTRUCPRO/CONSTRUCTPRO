@@ -9,16 +9,25 @@ from app.domain.material import Categoria, Material
 
 
 class MaterialRepository:
+    """
+    Acceso a datos de materiales y categorías: solo consulta y guarda en la BD.
+    No valida reglas de negocio ni sabe de HTTP; eso es del dominio y del servicio.
+    """
 
     def __init__(self, db: Session):
+        """
+        Recibe la sesión de BD de la petición; todas las consultas de este repositorio la usan.
+        """
         self.db = db
 
     # ── Consultas ──────────────────────────────────────────
 
     def obtener_por_id(self, material_id: int) -> Optional[Material]:
+        """El material con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Material, material_id)
 
     def obtener_categoria(self, categoria_id: int) -> Optional[Categoria]:
+        """La categoría con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Categoria, categoria_id)
 
     def existe_duplicado(self, nombre: str, unidad: str, categoria_id: int,

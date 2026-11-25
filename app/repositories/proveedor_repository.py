@@ -10,13 +10,21 @@ from app.domain.proveedor import Proveedor
 
 
 class ProveedorRepository:
+    """
+    Acceso a datos de proveedores: solo consulta y guarda en la BD.
+    No valida reglas de negocio ni sabe de HTTP; eso es del dominio y del servicio.
+    """
 
     def __init__(self, db: Session):
+        """
+        Recibe la sesión de BD de la petición; todas las consultas de este repositorio la usan.
+        """
         self.db = db
 
     # ── Consultas ──────────────────────────────────────────
 
     def obtener_por_id(self, proveedor_id: int) -> Optional[Proveedor]:
+        """El proveedor con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Proveedor, proveedor_id)
 
     def existe_nit(self, nit: str, excluir_id: Optional[int] = None) -> bool:

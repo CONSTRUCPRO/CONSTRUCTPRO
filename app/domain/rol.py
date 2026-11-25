@@ -26,6 +26,11 @@ ROLES_PROTEGIDOS = ("administrador", "coordinador", "director")
 
 
 class Rol(Base):
+    """
+    Un rol del sistema (Administrador, Coordinador, Director, Empleado o uno creado después) con
+    su lista de permisos. Los cuatro iniciales los crea la migración de la HU-03.
+    """
+
     __tablename__ = "roles"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -43,6 +48,7 @@ class Rol(Base):
     # ── Reglas de negocio ─────────────────────────────────
 
     def es_protegido(self) -> bool:
+        """RN-015: Administrador, Coordinador y Director no se renombran ni se inactivan."""
         return self.nombre.lower() in ROLES_PROTEGIDOS
 
     def renombrar(self, nuevo_nombre: str, descripcion: Optional[str]) -> None:
@@ -98,6 +104,10 @@ class Rol(Base):
         return {m: sorted(agrupados[m], key=ACCIONES.index) for m in MODULOS if m in agrupados}
 
     def tiene_permiso(self, modulo: str, accion: str) -> bool:
+        """
+        ¿Este rol puede hacer `accion` en `modulo`? Un rol inactivo no tiene ningún permiso.
+        Lo usa requiere_permiso() en cada endpoint protegido.
+        """
         if self.estado != "activo":
             return False
         return any(p.modulo == modulo and p.accion == accion for p in self.permisos)

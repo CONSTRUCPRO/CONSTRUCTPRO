@@ -31,6 +31,7 @@ class MaterialCreate(BaseModel):
     @field_validator("nombre")
     @classmethod
     def limpiar_nombre(cls, v: str) -> str:
+        """Quita espacios al inicio, al final y repetidos del nombre."""
         v = " ".join(v.split())  # quita espacios al inicio, al final y repetidos
         if len(v) < 2:
             raise ValueError("El nombre del material debe tener al menos 2 caracteres.")
@@ -39,6 +40,7 @@ class MaterialCreate(BaseModel):
     @field_validator("unidad")
     @classmethod
     def limpiar_unidad(cls, v: str) -> str:
+        """La unidad se compara en minúscula ('Bulto' -> 'bulto')."""
         return v.strip().lower()
 
 
@@ -48,12 +50,18 @@ class MaterialUpdate(MaterialCreate):
 
 
 class PrecioUpdate(BaseModel):
+    """
+    Nuevo precio de referencia (PATCH /precio). La regla del precio (RN-033) se valida en el dominio.
+    """
+
     model_config = ConfigDict(json_schema_extra={"example": {"precio_referencia": 29900.00}})
 
     precio_referencia: float = Field(..., description="Nuevo precio de referencia en COP (mayor que cero, RN-033)")
 
 
 class EstadoUpdate(BaseModel):
+    """Activar o inactivar un material (RN-035: no se elimina)."""
+
     model_config = ConfigDict(json_schema_extra={"example": {"estado": "inactivo"}})
 
     estado: str = Field(..., description="'inactivo' para inactivar o 'activo' para reactivar")
@@ -61,6 +69,7 @@ class EstadoUpdate(BaseModel):
     @field_validator("estado")
     @classmethod
     def validar_estado(cls, v: str) -> str:
+        """Solo 'activo' o 'inactivo'."""
         v = v.strip().lower()
         if v not in (ESTADO_ACTIVO, ESTADO_INACTIVO):
             raise ValueError("El estado debe ser 'activo' o 'inactivo'.")
@@ -70,6 +79,8 @@ class EstadoUpdate(BaseModel):
 # ── SALIDA ────────────────────────────────────────────────
 
 class MaterialResponse(BaseModel):
+    """Un material en las respuestas, con el nombre de su categoría y el precio en COP."""
+
     material_id: str               # ids SIEMPRE como texto y con sufijo _id
     nombre: str
     categoria_id: str
@@ -83,6 +94,10 @@ class MaterialResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, m: Material) -> "MaterialResponse":
+        """
+        Convierte el modelo de BD de un material en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(
             material_id=str(m.id),
             nombre=m.nombre,

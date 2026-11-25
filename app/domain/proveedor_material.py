@@ -23,6 +23,7 @@ from app.domain.proveedor import Proveedor
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
@@ -32,6 +33,12 @@ def _a_dinero(valor: float) -> Decimal:
 
 
 class ProveedorMaterial(Base):
+    """
+    La oferta de un proveedor para un material (tabla proveedor_material): precio,
+    disponibilidad y días de entrega. Un proveedor tiene una sola oferta por material; si
+    vuelve a ofertarlo, se actualiza. El comparativo de precios (HU-16) se arma con estas ofertas.
+    """
+
     __tablename__ = "proveedor_material"
     __table_args__ = (
         # Un mismo material no se asocia dos veces al mismo proveedor

@@ -39,18 +39,29 @@ CENTAVOS = Decimal("0.01")
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
 def hoy_utc() -> date:
+    """
+    La fecha de hoy en UTC: con ella se calcula la vigencia y se revisa si la cotización venció.
+    """
     return _ahora_utc().date()
 
 
 def _redondear(valor: Decimal) -> Decimal:
+    """Redondea dinero a centavos (2 decimales) como se hace a mano: 0,005 sube."""
     return valor.quantize(CENTAVOS, rounding=ROUND_HALF_UP)
 
 
 class Cotizacion(Base):
+    """
+    La cotización a un proveedor para un proyecto (tabla cotizaciones), armada con uno o varios
+    comparativos ya seleccionados. Calcula subtotal, IVA (19 %) y total, y vale 15 días.
+    Estados: Generada -> Enviada -> Aprobada / Rechazada (HU-20), o Anulada.
+    """
+
     __tablename__ = "cotizaciones"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -125,6 +136,7 @@ class Cotizacion(Base):
         self.total = self.subtotal + self.impuestos
 
     def esta_vencida(self, hoy: date) -> bool:
+        """True si hoy ya pasó la fecha vigente_hasta (RN-065)."""
         return hoy > self.vigente_hasta
 
     def enviar(self, hoy: date) -> None:

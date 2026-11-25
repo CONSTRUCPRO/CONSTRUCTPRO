@@ -26,6 +26,10 @@ router = APIRouter(prefix="/api/v1/usuarios", tags=["Usuarios"])
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> UsuarioService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return UsuarioService(UsuarioRepository(db))
 
 
@@ -33,6 +37,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> UsuarioService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    errores: list[dict]) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -48,6 +56,7 @@ def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
 
 
 def _error(campo: Optional[str], codigo: str, mensaje: str, regla: Optional[str] = None) -> dict:
+    """Un elemento de la lista `errores` del ejemplo de Swagger."""
     return {"campo": campo, "codigo": codigo, "mensaje": mensaje, "regla": regla}
 
 
@@ -104,6 +113,7 @@ ERROR_422_PROPIA = _ejemplo_error(
 def crear_usuario(datos: UsuarioCreate,
                   servicio: UsuarioService = Depends(obtener_servicio),
                   usuario: UsuarioActual = Depends(requiere_permiso("Usuarios", "crear"))):
+    """POST /api/v1/usuarios: registra un usuario (201)."""
     return respuesta_exitosa(servicio.crear(datos), "Usuario registrado correctamente.")
 
 
@@ -120,6 +130,7 @@ def listar_usuarios(
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: UsuarioService = Depends(obtener_servicio),
         usuario: UsuarioActual = Depends(requiere_permiso("Usuarios", "consultar"))):
+    """GET /api/v1/usuarios: lista paginada con filtros."""
     usuarios, paginacion = servicio.listar(estado, rol_id, nombre, pagina, por_pagina)
     return respuesta_exitosa(usuarios, "Consulta realizada correctamente.", paginacion)
 
@@ -131,6 +142,7 @@ def listar_usuarios(
 def obtener_usuario(usuario_id: int,
                     servicio: UsuarioService = Depends(obtener_servicio),
                     usuario: UsuarioActual = Depends(requiere_permiso("Usuarios", "consultar"))):
+    """GET /api/v1/usuarios/{usuario_id}: un usuario."""
     return respuesta_exitosa(servicio.obtener(usuario_id), "Consulta realizada correctamente.")
 
 
@@ -144,6 +156,7 @@ def obtener_usuario(usuario_id: int,
 def editar_usuario(usuario_id: int, datos: UsuarioUpdate,
                    servicio: UsuarioService = Depends(obtener_servicio),
                    usuario: UsuarioActual = Depends(requiere_permiso("Usuarios", "editar"))):
+    """PUT /api/v1/usuarios/{usuario_id}: edita el perfil."""
     return respuesta_exitosa(servicio.editar(usuario_id, datos),
                              "Usuario actualizado correctamente.")
 
@@ -159,6 +172,7 @@ def editar_usuario(usuario_id: int, datos: UsuarioUpdate,
 def cambiar_estado(usuario_id: int, datos: EstadoUsuarioUpdate,
                    servicio: UsuarioService = Depends(obtener_servicio),
                    usuario: UsuarioActual = Depends(requiere_permiso("Usuarios", "inactivar"))):
+    """PATCH /api/v1/usuarios/{usuario_id}/estado: activa o inactiva (204, sin cuerpo)."""
     servicio.cambiar_estado(usuario_id, datos, usuario.usuario_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -171,5 +185,6 @@ def cambiar_estado(usuario_id: int, datos: EstadoUsuarioUpdate,
 def cambiar_rol(usuario_id: int, datos: RolUsuarioUpdate,
                 servicio: UsuarioService = Depends(obtener_servicio),
                 usuario: UsuarioActual = Depends(requiere_permiso("Usuarios", "editar"))):
+    """PATCH /api/v1/usuarios/{usuario_id}/rol: asigna otro rol."""
     return respuesta_exitosa(servicio.cambiar_rol(usuario_id, datos),
                              "Rol del usuario actualizado correctamente.")

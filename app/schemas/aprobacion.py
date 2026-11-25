@@ -23,6 +23,7 @@ class DecisionDatos(BaseModel):
     @field_validator("decision")
     @classmethod
     def validar_decision(cls, v: str) -> str:
+        """Solo 'aprobada' o 'rechazada' (en minúscula)."""
         v = v.strip().lower()
         if v not in (DECISION_APROBADA, DECISION_RECHAZADA):
             raise ValueError("La decisión debe ser 'aprobada' o 'rechazada'.")
@@ -48,6 +49,12 @@ class AprobacionResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, a: Aprobacion) -> "AprobacionResponse":
+        """
+        Convierte el modelo de BD de una aprobación en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+
+        El proyecto se toma de la cotización.
+        """
         return cls(
             aprobacion_id=str(a.id),
             cotizacion_id=str(a.cotizacion_id),

@@ -25,6 +25,8 @@ class CotizacionCreate(BaseModel):
 # ── SALIDA ────────────────────────────────────────────────
 
 class LineaCotizacionResponse(BaseModel):
+    """Una línea de la cotización: material, cantidad, precio unitario y subtotal."""
+
     comparativo_id: str
     material_id: str
     cantidad: int
@@ -33,12 +35,18 @@ class LineaCotizacionResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, d: CotizacionDetalle) -> "LineaCotizacionResponse":
+        """
+        Convierte el modelo de BD de una línea de la cotización en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(comparativo_id=str(d.comparativo_id), material_id=str(d.material_id),
                    cantidad=d.cantidad, precio_unitario=float(d.precio_unitario),
                    subtotal=float(d.subtotal))
 
 
 class AprobacionResumen(BaseModel):
+    """Resumen de la aprobación de la cotización (null hasta que se envía)."""
+
     aprobacion_id: str
     estado: str                    # En revisión (la HU-20 la pasa a Aprobada / Rechazada)
     monto: float
@@ -46,11 +54,17 @@ class AprobacionResumen(BaseModel):
 
     @classmethod
     def desde_modelo(cls, a: Aprobacion) -> "AprobacionResumen":
+        """
+        Convierte el modelo de BD de la aprobación en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(aprobacion_id=str(a.id), estado=a.estado, monto=float(a.monto),
                    fecha_envio=fecha_iso(a.fecha_envio))
 
 
 class CotizacionResponse(BaseModel):
+    """La cotización con sus líneas, los totales y el resumen de su aprobación."""
+
     cotizacion_id: str
     proyecto_id: str
     proveedor_id: str
@@ -68,6 +82,10 @@ class CotizacionResponse(BaseModel):
     @classmethod
     def desde_modelo(cls, c: Cotizacion,
                      aprobacion: Optional[Aprobacion] = None) -> "CotizacionResponse":
+        """
+        Convierte el modelo de BD de una cotización en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(
             cotizacion_id=str(c.id),
             proyecto_id=str(c.proyecto_id),

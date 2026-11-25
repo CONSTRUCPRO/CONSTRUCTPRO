@@ -1,3 +1,8 @@
+# app/core/config.py
+# CONFIGURACIÓN CENTRAL. Lee las variables del archivo .env (que no se sube a git) y las deja en
+# un solo objeto `settings`. Cualquier archivo hace `from app.core.config import settings` en vez
+# de repetir os.getenv. Cada valor tiene uno por defecto pensado para desarrollo; el .env.example
+# muestra todas las variables que se pueden cambiar.
 import os
 
 from dotenv import load_dotenv
@@ -6,6 +11,16 @@ load_dotenv()
 
 
 class Settings:
+    """
+    Todas las opciones de la aplicación en un solo lugar.
+
+    - Aplicación: nombre, ambiente (development / production), modo debug y puerto.
+    - DATABASE_URL: a qué base de datos conectarse (SQLite en desarrollo).
+    - JWT_* y DIAS_TOKEN_RENOVACION: firma y duración de los tokens (HU-02, RN-008).
+    - MAX_INTENTOS_FALLIDOS y MINUTOS_BLOQUEO: bloqueo por contraseña errada (RN-007).
+    - TOPE_APROBACION_COORDINADOR: monto hasta el que aprueba un Coordinador (RN-076).
+    """
+
     APP_NAME: str = os.getenv("APP_NAME", "CONSTRUCTPRO")
     APP_ENV: str = os.getenv("APP_ENV", "development")
     APP_DEBUG: bool = os.getenv("APP_DEBUG", "False").lower() == "true"

@@ -38,6 +38,13 @@ esquema_bearer = HTTPBearer(
 
 @dataclass
 class UsuarioActual:
+    """
+    Quién está haciendo la petición, según su token: id, rol vigente y sesión.
+
+    Los routers lo reciben con Depends(...) y se lo pasan al servicio cuando la regla lo
+    necesita (por ejemplo, RN-004: nadie se inactiva a sí mismo; RN-073: segregación).
+    """
+
     usuario_id: Optional[str]
     rol: str
     sesion_id: Optional[int] = None
@@ -47,6 +54,16 @@ def obtener_usuario_actual(
     credenciales: Optional[HTTPAuthorizationCredentials] = Depends(esquema_bearer),
     db: Session = Depends(get_db),
 ) -> UsuarioActual:
+    """
+    Dependencia que protege los endpoints: valida el token y devuelve el UsuarioActual.
+
+    Pasos (si alguno falla, 401):
+      1. Que venga el encabezado Authorization: Bearer <token>.
+      2. Que el token tenga firma válida y no haya vencido (RN-008).
+      3. Que su sesión exista y pertenezca a ese usuario.
+      4. Que el usuario siga activo (RN-006) y la sesión siga abierta y vigente (logout, RN-009).
+    El rol se toma de la BD en este momento, no del token (RN-010).
+    """
     # Import local: evita importar los modelos al cargar este módulo.
     from app.domain.sesion import Sesion
 
@@ -74,6 +91,7 @@ def requiere_rol(*roles_permitidos: str, regla: Optional[str] = None):
     permitidos = {r.capitalize() for r in roles_permitidos}
 
     def verificador(usuario: UsuarioActual = Depends(obtener_usuario_actual)) -> UsuarioActual:
+        """Deja pasar solo si el rol del usuario está entre los permitidos; si no, 403."""
         if usuario.rol.capitalize() not in permitidos:
             raise PermisoDenegadoError(
                 f"El rol {usuario.rol} no puede realizar esta operación.", regla=regla
@@ -97,6 +115,10 @@ def requiere_permiso(modulo: str, accion: str):
 
     def verificador(usuario: UsuarioActual = Depends(obtener_usuario_actual),
                     db: Session = Depends(get_db)) -> UsuarioActual:
+        """
+        Deja pasar solo si el rol del usuario tiene el permiso (módulo, acción) en la tabla
+        permisos_rol de la HU-03; si no, 403 AUT_SIN_PERMISO.
+        """
         if not RolService(RolRepository(db)).rol_tiene_permiso(usuario.rol, modulo, accion):
             raise PermisoDenegadoError(
                 f"El rol {usuario.rol} no tiene permiso para '{accion}' en el módulo {modulo}."

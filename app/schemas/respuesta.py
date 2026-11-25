@@ -14,6 +14,8 @@ T = TypeVar("T")
 
 
 class Paginacion(BaseModel):
+    """Datos de paginación que van en meta.paginacion cuando la respuesta es una lista."""
+
     pagina: int
     por_pagina: int
     total_registros: int
@@ -21,6 +23,8 @@ class Paginacion(BaseModel):
 
 
 class Meta(BaseModel):
+    """Metadatos de toda respuesta: hora, versión, id de la petición y paginación."""
+
     timestamp: str
     version: str
     peticion_id: str
@@ -28,6 +32,8 @@ class Meta(BaseModel):
 
 
 class ErrorDetalle(BaseModel):
+    """Un problema concreto: en qué campo, con qué código, qué pasó y qué regla se incumplió."""
+
     campo: Optional[str] = None
     codigo: str
     mensaje: str
@@ -35,6 +41,14 @@ class ErrorDetalle(BaseModel):
 
 
 class Respuesta(BaseModel, Generic[T]):
+    """
+    El sobre estándar del Componente F, genérico en T (el tipo de `datos`).
+
+    Respuesta[UsuarioResponse] le dice a Swagger cómo luce una respuesta con un usuario, y
+    Respuesta[list[UsuarioResponse]] una con una lista. Solo documenta: el JSON real lo arma
+    respuesta_exitosa() o los manejadores de errores.
+    """
+
     exito: bool
     codigo: str
     mensaje: str

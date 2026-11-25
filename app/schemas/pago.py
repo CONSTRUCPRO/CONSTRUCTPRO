@@ -39,6 +39,7 @@ class PagoCreate(BaseModel):
     @field_validator("metodo_pago")
     @classmethod
     def normalizar_metodo(cls, v: Optional[str]) -> Optional[str]:
+        """El método se compara en minúscula y sin espacios ('PSE ' -> 'pse')."""
         return v.strip().lower() if v else v
 
 
@@ -52,6 +53,8 @@ class AnulacionPago(BaseModel):
 # ── SALIDA ────────────────────────────────────────────────
 
 class PagoBase(BaseModel):
+    """Los datos de un pago tal como salen en las respuestas."""
+
     pago_id: str
     orden_compra_id: str
     monto: float
@@ -68,6 +71,9 @@ class PagoBase(BaseModel):
 
     @classmethod
     def _campos(cls, p: Pago) -> dict:
+        """
+        Convierte el modelo en el diccionario de campos; lo reutilizan desde_modelo y con_saldo.
+        """
         return dict(
             pago_id=str(p.id), orden_compra_id=str(p.orden_compra_id), monto=float(p.monto),
             moneda=p.moneda, metodo_pago=p.metodo_pago, numero_transaccion=p.numero_transaccion,
@@ -80,6 +86,10 @@ class PagoBase(BaseModel):
 
     @classmethod
     def desde_modelo(cls, p: Pago) -> "PagoBase":
+        """
+        Convierte el modelo de BD de un pago en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(**cls._campos(p))
 
 
@@ -91,6 +101,7 @@ class PagoResponse(PagoBase):
 
     @classmethod
     def con_saldo(cls, p: Pago, total_pagado: Decimal) -> "PagoResponse":
+        """Agrega al pago el estado de cuenta de la orden: valor, total pagado y saldo pendiente."""
         valor = p.orden.valor_total
         return cls(**cls._campos(p), valor_orden=float(valor), total_pagado=float(total_pagado),
                    saldo_pendiente=float(valor - total_pagado))
@@ -109,6 +120,12 @@ class PagosOrdenResponse(BaseModel):
     @classmethod
     def desde_modelo(cls, orden: OrdenCompra, pagos: list[Pago],
                      total_pagado: Decimal) -> "PagosOrdenResponse":
+        """
+        Convierte el modelo de BD de los pagos de una orden en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+
+        Incluye el estado de la orden y su saldo pendiente.
+        """
         return cls(orden_compra_id=str(orden.id), estado_orden=orden.estado,
                    valor_orden=float(orden.valor_total), total_pagado=float(total_pagado),
                    saldo_pendiente=float(orden.valor_total - total_pagado),

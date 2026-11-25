@@ -32,10 +32,18 @@ ESTADO_ANULADA = "anulada"
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
 class Solicitud(Base):
+    """
+    Un pedido formal de materiales para un proyecto (tabla solicitudes), con sus líneas en
+    solicitud_detalles. Es el primer paso de la cadena de compra:
+    solicitud -> comparativo -> cotización -> aprobación -> orden -> pago e inventario.
+    El solicitante es el usuario del token (no viene en el cuerpo de la petición).
+    """
+
     __tablename__ = "solicitudes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -95,6 +103,7 @@ class Solicitud(Base):
         return solicitud
 
     def es_pendiente(self) -> bool:
+        """True mientras la solicitud no se haya anulado."""
         return self.estado == ESTADO_PENDIENTE
 
     def verificar_autor(self, usuario_id: int) -> None:
