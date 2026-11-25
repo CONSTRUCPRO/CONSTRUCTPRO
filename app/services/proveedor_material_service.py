@@ -8,7 +8,7 @@ from app.domain.material import Material
 from app.domain.proveedor import Proveedor
 from app.domain.proveedor_material import ProveedorMaterial
 from app.repositories.proveedor_material_repository import ProveedorMaterialRepository
-from app.schemas.proveedor_material import (
+from app.api.schemas.proveedor_material import (
     OfertaCreate,
     OfertaResponse,
     ProveedorDeMaterialResponse,
@@ -16,13 +16,22 @@ from app.schemas.proveedor_material import (
 
 
 class ProveedorMaterialService:
+    """
+    Casos de uso de las ofertas de los proveedores (HU-11). Orquesta: busca con el repositorio, aplica las reglas del
+    dominio y devuelve el schema de salida. Solo lanza excepciones de dominio; la capa API
+    las convierte en el sobre de error.
+    """
 
     def __init__(self, repo: ProveedorMaterialRepository):
+        """
+        Recibe el repositorio por parámetro (inyección de dependencias): en las pruebas se le pasa uno con una BD en memoria.
+        """
         self.repo = repo  # inyección de dependencia
 
     # ── Apoyos internos ────────────────────────────────────
 
     def _buscar_proveedor(self, proveedor_id: int) -> Proveedor:
+        """Trae el proveedor por su id o lanza RecursoNoEncontradoError (404 REC_NO_ENCONTRADO)."""
         proveedor = self.repo.obtener_proveedor(proveedor_id)
         if not proveedor:
             raise RecursoNoEncontradoError(
@@ -32,6 +41,7 @@ class ProveedorMaterialService:
         return proveedor
 
     def _buscar_material(self, material_id: int) -> Material:
+        """Trae el material por su id o lanza RecursoNoEncontradoError (404 REC_NO_ENCONTRADO)."""
         material = self.repo.obtener_material(material_id)
         if not material:
             raise RecursoNoEncontradoError(

@@ -10,14 +10,14 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.material_repository import MaterialRepository
-from app.schemas.material import (
+from app.api.schemas.material import (
     EstadoUpdate,
     MaterialCreate,
     MaterialResponse,
     MaterialUpdate,
     PrecioUpdate,
 )
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Respuesta
 from app.services.material_service import MaterialService
 
 router = APIRouter(prefix="/api/v1/materiales", tags=["Materiales"])
@@ -28,6 +28,10 @@ MODULO = "Materiales"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> MaterialService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return MaterialService(MaterialRepository(db))
 
 
@@ -35,6 +39,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> MaterialService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str]) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -87,6 +95,7 @@ ERROR_422_PRECIO = _ejemplo_error(
 def crear_material(datos: MaterialCreate,
                    servicio: MaterialService = Depends(obtener_servicio),
                    usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
+    """POST /api/v1/materiales: registra un material (201)."""
     return respuesta_exitosa(servicio.crear(datos), "Material registrado correctamente.")
 
 
@@ -103,6 +112,7 @@ def listar_materiales(
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: MaterialService = Depends(obtener_servicio),
         usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/materiales: catálogo paginado con filtros."""
     items, paginacion = servicio.listar(categoria_id, nombre, estado, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
 
@@ -114,6 +124,7 @@ def listar_materiales(
 def obtener_material(material_id: int,
                      servicio: MaterialService = Depends(obtener_servicio),
                      usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/materiales/{material_id}: un material."""
     return respuesta_exitosa(servicio.obtener(material_id), "Consulta realizada correctamente.")
 
 
@@ -126,6 +137,7 @@ def obtener_material(material_id: int,
 def editar_material(material_id: int, datos: MaterialUpdate,
                     servicio: MaterialService = Depends(obtener_servicio),
                     usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "editar"))):
+    """PUT /api/v1/materiales/{material_id}: reemplaza sus datos."""
     return respuesta_exitosa(servicio.editar(material_id, datos),
                              "Material actualizado correctamente.")
 
@@ -137,6 +149,7 @@ def editar_material(material_id: int, datos: MaterialUpdate,
 def actualizar_precio(material_id: int, datos: PrecioUpdate,
                       servicio: MaterialService = Depends(obtener_servicio),
                       usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "editar"))):
+    """PATCH /api/v1/materiales/{material_id}/precio: cambia el precio de referencia."""
     return respuesta_exitosa(servicio.actualizar_precio(material_id, datos),
                              "Precio de referencia actualizado correctamente.")
 
@@ -149,5 +162,6 @@ def actualizar_precio(material_id: int, datos: PrecioUpdate,
 def cambiar_estado(material_id: int, datos: EstadoUpdate,
                    servicio: MaterialService = Depends(obtener_servicio),
                    usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "inactivar"))):
+    """PATCH /api/v1/materiales/{material_id}/estado: inactiva o reactiva."""
     return respuesta_exitosa(servicio.cambiar_estado(material_id, datos),
                              "Estado del material actualizado correctamente.")

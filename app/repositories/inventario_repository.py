@@ -14,19 +14,29 @@ from app.repositories.pago_repository import PagoRepository
 
 
 class InventarioRepository:
+    """
+    Acceso a datos de inventarios y movimientos: solo consulta y guarda en la BD.
+    No valida reglas de negocio ni sabe de HTTP; eso es del dominio y del servicio.
+    """
 
     def __init__(self, db: Session):
+        """
+        Recibe la sesión de BD de la petición; todas las consultas de este repositorio la usan.
+        """
         self.db = db
 
     # ── Consultas ──────────────────────────────────────────
 
     def obtener_orden(self, orden_compra_id: int) -> Optional[OrdenCompra]:
+        """La orden con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(OrdenCompra, orden_compra_id)
 
     def obtener_proyecto(self, proyecto_id: int) -> Optional[Proyecto]:
+        """El proyecto con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Proyecto, proyecto_id)
 
     def obtener_material(self, material_id: int) -> Optional[Material]:
+        """El material con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Material, material_id)
 
     def existencia(self, proyecto_id: int, material_id: int) -> Optional[Inventario]:

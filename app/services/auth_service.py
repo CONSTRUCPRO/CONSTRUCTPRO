@@ -9,18 +9,27 @@ from app.domain.excepciones import NoAutenticadoError
 from app.domain.sesion import Sesion, nuevo_token_renovacion
 from app.domain.usuario import ahora_utc_sin_zona
 from app.repositories.sesion_repository import SesionRepository
-from app.schemas.auth import LoginDatos, RenovarDatos, SesionResponse
+from app.api.schemas.auth import LoginDatos, RenovarDatos, SesionResponse
 
 # Mismo mensaje para correo inexistente y contraseña errada: no se revela cuál falló.
 MENSAJE_CREDENCIALES = "Las credenciales enviadas no coinciden con ningún usuario activo."
 
 
 class AuthService:
+    """
+    Casos de uso de autenticación (HU-02): login, renovación y logout. Orquesta: busca con el repositorio, aplica las reglas del
+    dominio y devuelve el schema de salida. Solo lanza excepciones de dominio; la capa API
+    las convierte en el sobre de error.
+    """
 
     def __init__(self, repo: SesionRepository):
+        """
+        Recibe el repositorio por parámetro (inyección de dependencias): en las pruebas se le pasa uno con una BD en memoria.
+        """
         self.repo = repo  # inyección de dependencia
 
     def _respuesta(self, sesion: Sesion, token_renovacion: str) -> SesionResponse:
+        """Crea el token de acceso (JWT) de la sesión y arma la respuesta con los dos tokens."""
         usuario = sesion.usuario
         token, expira = crear_token_acceso(usuario.id, usuario.rol.nombre, sesion.id,
                                            sesion.version_sesion)

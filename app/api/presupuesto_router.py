@@ -11,8 +11,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso, requiere_rol
 from app.repositories.presupuesto_repository import PresupuestoRepository
-from app.schemas.presupuesto import PresupuestoDatos, PresupuestoResponse
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.presupuesto import PresupuestoDatos, PresupuestoResponse
+from app.api.schemas.respuesta import Respuesta
 from app.services.presupuesto_service import PresupuestoService
 
 router = APIRouter(prefix="/api/v1/proyectos", tags=["Presupuesto del proyecto"])
@@ -22,6 +22,10 @@ solo_director = requiere_rol("Director", regla="RN-022")
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> PresupuestoService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return PresupuestoService(PresupuestoRepository(db))
 
 
@@ -29,6 +33,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> PresupuestoService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str] = None) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -83,6 +91,9 @@ ERROR_422_RN023 = _ejemplo_error(
 def asignar_presupuesto(proyecto_id: int, datos: PresupuestoDatos,
                         servicio: PresupuestoService = Depends(obtener_servicio),
                         usuario: UsuarioActual = Depends(solo_director)):
+    """
+    POST /api/v1/proyectos/{proyecto_id}/presupuesto: asigna el presupuesto (solo Director, 201).
+    """
     return respuesta_exitosa(servicio.asignar(proyecto_id, datos, usuario.usuario_id),
                              "Presupuesto asignado correctamente.")
 
@@ -96,6 +107,7 @@ def asignar_presupuesto(proyecto_id: int, datos: PresupuestoDatos,
 def consultar_presupuesto(proyecto_id: int,
                           servicio: PresupuestoService = Depends(obtener_servicio),
                           usuario: UsuarioActual = Depends(requiere_permiso("Proyectos", "consultar"))):
+    """GET /api/v1/proyectos/{proyecto_id}/presupuesto: total, comprometido, ejecutado y saldo."""
     return respuesta_exitosa(servicio.consultar(proyecto_id), "Consulta realizada correctamente.")
 
 
@@ -109,5 +121,6 @@ def consultar_presupuesto(proyecto_id: int,
 def actualizar_presupuesto(proyecto_id: int, datos: PresupuestoDatos,
                            servicio: PresupuestoService = Depends(obtener_servicio),
                            usuario: UsuarioActual = Depends(solo_director)):
+    """PUT /api/v1/proyectos/{proyecto_id}/presupuesto: cambia el monto (solo Director, RN-023)."""
     return respuesta_exitosa(servicio.actualizar(proyecto_id, datos, usuario.usuario_id),
                              "Presupuesto actualizado correctamente.")

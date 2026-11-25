@@ -17,7 +17,7 @@ from app.domain.excepciones import (
 )
 from app.domain.proveedor import Proveedor
 from app.repositories.proveedor_repository import ProveedorRepository
-from app.schemas.proveedor import EstadoProveedorUpdate, ProveedorCreate, ProveedorUpdate
+from app.api.schemas.proveedor import EstadoProveedorUpdate, ProveedorCreate, ProveedorUpdate
 from app.services.proveedor_service import ProveedorService
 
 

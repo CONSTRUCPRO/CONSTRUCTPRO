@@ -10,8 +10,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.cotizacion_repository import CotizacionRepository
-from app.schemas.cotizacion import CotizacionCreate, CotizacionResponse
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.cotizacion import CotizacionCreate, CotizacionResponse
+from app.api.schemas.respuesta import Respuesta
 from app.services.cotizacion_service import CotizacionService
 
 router = APIRouter(prefix="/api/v1/cotizaciones", tags=["Cotizaciones"])
@@ -22,6 +22,10 @@ MODULO = "Cotizaciones"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> CotizacionService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return CotizacionService(CotizacionRepository(db))
 
 
@@ -29,6 +33,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> CotizacionService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str]) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -93,6 +101,7 @@ ERROR_422_ENVIAR = _ejemplo_error(
 def generar_cotizacion(datos: CotizacionCreate,
                        servicio: CotizacionService = Depends(obtener_servicio),
                        usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
+    """POST /api/v1/cotizaciones: genera la cotización (201)."""
     return respuesta_exitosa(servicio.generar(datos), "Cotización generada correctamente.")
 
 
@@ -109,6 +118,7 @@ def listar_cotizaciones(
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: CotizacionService = Depends(obtener_servicio),
         usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/cotizaciones: lista paginada con filtros."""
     items, paginacion = servicio.listar(proyecto_id, estado, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
 
@@ -120,6 +130,7 @@ def listar_cotizaciones(
 def obtener_cotizacion(cotizacion_id: int,
                        servicio: CotizacionService = Depends(obtener_servicio),
                        usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/cotizaciones/{cotizacion_id}: una cotización."""
     return respuesta_exitosa(servicio.obtener(cotizacion_id), "Consulta realizada correctamente.")
 
 
@@ -132,6 +143,7 @@ def obtener_cotizacion(cotizacion_id: int,
 def anular_cotizacion(cotizacion_id: int,
                       servicio: CotizacionService = Depends(obtener_servicio),
                       usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "editar"))):
+    """PATCH /api/v1/cotizaciones/{cotizacion_id}/anular: anula la cotización."""
     return respuesta_exitosa(servicio.anular(cotizacion_id), "Cotización anulada correctamente.")
 
 
@@ -146,5 +158,6 @@ def anular_cotizacion(cotizacion_id: int,
 def enviar_cotizacion(cotizacion_id: int,
                       servicio: CotizacionService = Depends(obtener_servicio),
                       usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "editar"))):
+    """POST /api/v1/cotizaciones/{cotizacion_id}/enviar: la envía a presupuesto y aprobación."""
     return respuesta_exitosa(servicio.enviar(cotizacion_id, usuario.usuario_id),
                              "Cotización enviada a aprobación correctamente.")

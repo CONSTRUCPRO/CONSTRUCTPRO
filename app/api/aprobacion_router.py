@@ -13,8 +13,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.aprobacion_repository import AprobacionRepository
-from app.schemas.aprobacion import AprobacionResponse, DecisionDatos
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.aprobacion import AprobacionResponse, DecisionDatos
+from app.api.schemas.respuesta import Respuesta
 from app.services.aprobacion_service import AprobacionService
 
 router = APIRouter(prefix="/api/v1/aprobaciones", tags=["Aprobaciones"])
@@ -22,6 +22,10 @@ MODULO = "Aprobaciones"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> AprobacionService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return AprobacionService(AprobacionRepository(db))
 
 
@@ -29,6 +33,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> AprobacionService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str] = None) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -81,6 +89,7 @@ def listar_aprobaciones(
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: AprobacionService = Depends(obtener_servicio),
         usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/aprobaciones: por defecto, las compras En revisión."""
     items, paginacion = servicio.listar(estado, proyecto_id, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
 
@@ -100,6 +109,9 @@ def historico(
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: AprobacionService = Depends(obtener_servicio),
         usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """
+    GET /api/v1/aprobaciones/historico: decisiones tomadas. Va antes de /{id} para que 'historico' no se lea como un id.
+    """
     items, paginacion = servicio.historico(proyecto_id, aprobador_id, desde, hasta, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
 
@@ -112,6 +124,7 @@ def historico(
 def obtener_aprobacion(aprobacion_id: int,
                        servicio: AprobacionService = Depends(obtener_servicio),
                        usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/aprobaciones/{aprobacion_id}: una aprobación."""
     return respuesta_exitosa(servicio.obtener(aprobacion_id), "Consulta realizada correctamente.")
 
 
@@ -129,6 +142,9 @@ def obtener_aprobacion(aprobacion_id: int,
 def decidir(aprobacion_id: int, datos: DecisionDatos,
             servicio: AprobacionService = Depends(obtener_servicio),
             usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "aprobar"))):
+    """
+    PATCH /api/v1/aprobaciones/{aprobacion_id}: aprueba o rechaza; el mensaje depende de la decisión.
+    """
     resultado = servicio.decidir(aprobacion_id, datos, usuario.usuario_id)
     mensaje = ("Compra aprobada correctamente." if resultado.estado == "Aprobada"
                else "Compra rechazada correctamente.")

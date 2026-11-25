@@ -1,4 +1,4 @@
-# app/schemas/proveedor_material.py
+# app/api/schemas/proveedor_material.py
 # Esquemas Pydantic: validan la FORMA de la entrada y definen la forma de la SALIDA
 # (lo que va dentro de "datos" en el sobre estándar).
 # RN-038 (precio > 0) NO va aquí: va en el dominio, para que el error llegue con su regla.
@@ -44,6 +44,10 @@ class OfertaResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, o: ProveedorMaterial) -> "OfertaResponse":
+        """
+        Convierte el modelo de BD de una oferta en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(
             proveedor_id=str(o.proveedor_id),
             razon_social=o.proveedor.razon_social,
@@ -68,6 +72,12 @@ class ProveedorDeMaterialResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, o: ProveedorMaterial) -> "ProveedorDeMaterialResponse":
+        """
+        Convierte el modelo de BD de una oferta vista desde el material en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+
+        Tiene los campos exactos que pide el issue para la consulta por material.
+        """
         return cls(
             proveedor_id=str(o.proveedor_id),
             razon_social=o.proveedor.razon_social,

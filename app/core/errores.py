@@ -44,6 +44,12 @@ def registrar_manejadores(app: FastAPI) -> None:
 
     @app.middleware("http")
     async def asignar_peticion_id(request: Request, call_next):
+        """
+        Middleware: a cada petición le da un identificador único (peticion_id).
+
+        Ese id viaja en meta.peticion_id de la respuesta y en el encabezado X-Peticion-Id; si algo
+        falla, el mismo id aparece en el log junto al detalle técnico, así se encuentra el error.
+        """
         peticion_id = str(uuid.uuid4())
         peticion_id_actual.set(peticion_id)
         respuesta = await call_next(request)
@@ -52,6 +58,12 @@ def registrar_manejadores(app: FastAPI) -> None:
 
     @app.exception_handler(ConstruProError)
     async def manejar_error_negocio(request: Request, exc: ConstruProError):
+        """
+        Errores de negocio (ConstruProError y sus hijas, lanzadas por el dominio y los servicios).
+
+        Cada excepción ya trae su código HTTP, el código del catálogo, el mensaje, el campo y la
+        regla; aquí solo se empacan en el sobre estándar con un elemento en `errores`.
+        """
         error = {"campo": exc.campo, "codigo": exc.codigo,
                  "mensaje": exc.mensaje, "regla": exc.regla}
         return JSONResponse(
@@ -61,6 +73,12 @@ def registrar_manejadores(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def manejar_error_validacion(request: Request, exc: RequestValidationError):
+        """
+        Errores de validación de Pydantic (datos de entrada que no cumplen el schema).
+
+        Arma un elemento en `errores` por cada campo con problema: VAL_CAMPO_REQUERIDO si falta,
+        VAL_FORMATO_INVALIDO si viene mal. Si el JSON ni siquiera se puede leer, responde 400.
+        """
         errores = []
         json_mal_formado = False
         for err in exc.errors():
@@ -92,6 +110,10 @@ def registrar_manejadores(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def manejar_error_http(request: Request, exc: StarletteHTTPException):
+        """
+        Errores HTTP que lanza el propio FastAPI/Starlette, no nuestro código: ruta inexistente
+        (404), método no permitido (405), etc. También salen con el sobre estándar.
+        """
         codigo = _CODIGOS_HTTP.get(exc.status_code, "VAL_FORMATO_INVALIDO")
         mensaje = CATALOGO_MENSAJES[codigo]
         errores = None
@@ -116,6 +138,12 @@ def registrar_manejadores(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def manejar_error_inesperado(request: Request, exc: Exception):
+        """
+        Cualquier error que nadie esperaba (por ejemplo, la BD no responde): 500 ERR_INTERNO.
+
+        Al cliente solo le llega el mensaje amigable del catálogo; el detalle técnico (traceback)
+        se escribe en el log con el peticion_id, nunca en la respuesta (Definición de Hecho).
+        """
         peticion_id = peticion_id_actual.get()
         logger.exception("Error no controlado. peticion_id=%s ruta=%s %s",
                          peticion_id, request.method, request.url.path)

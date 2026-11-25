@@ -10,13 +10,13 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.proveedor_repository import ProveedorRepository
-from app.schemas.proveedor import (
+from app.api.schemas.proveedor import (
     EstadoProveedorUpdate,
     ProveedorCreate,
     ProveedorResponse,
     ProveedorUpdate,
 )
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Respuesta
 from app.services.proveedor_service import ProveedorService
 
 router = APIRouter(prefix="/api/v1/proveedores", tags=["Proveedores"])
@@ -28,6 +28,10 @@ MODULO = "Materiales"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> ProveedorService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return ProveedorService(ProveedorRepository(db))
 
 
@@ -35,6 +39,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> ProveedorService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str]) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -85,6 +93,7 @@ ERROR_422_FORMATO = _ejemplo_error(
 def crear_proveedor(datos: ProveedorCreate,
                     servicio: ProveedorService = Depends(obtener_servicio),
                     usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
+    """POST /api/v1/proveedores: registra un proveedor (201)."""
     return respuesta_exitosa(servicio.crear(datos), "Proveedor registrado correctamente.")
 
 
@@ -100,6 +109,7 @@ def listar_proveedores(
         por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
         servicio: ProveedorService = Depends(obtener_servicio),
         usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/proveedores: lista paginada con filtros."""
     items, paginacion = servicio.listar(estado, razon_social, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
 
@@ -111,6 +121,7 @@ def listar_proveedores(
 def obtener_proveedor(proveedor_id: int,
                       servicio: ProveedorService = Depends(obtener_servicio),
                       usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/proveedores/{proveedor_id}: un proveedor."""
     return respuesta_exitosa(servicio.obtener(proveedor_id), "Consulta realizada correctamente.")
 
 
@@ -123,6 +134,7 @@ def obtener_proveedor(proveedor_id: int,
 def editar_proveedor(proveedor_id: int, datos: ProveedorUpdate,
                      servicio: ProveedorService = Depends(obtener_servicio),
                      usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "editar"))):
+    """PUT /api/v1/proveedores/{proveedor_id}: reemplaza sus datos."""
     return respuesta_exitosa(servicio.editar(proveedor_id, datos),
                              "Proveedor actualizado correctamente.")
 
@@ -136,5 +148,6 @@ def editar_proveedor(proveedor_id: int, datos: ProveedorUpdate,
 def cambiar_estado(proveedor_id: int, datos: EstadoProveedorUpdate,
                    servicio: ProveedorService = Depends(obtener_servicio),
                    usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "inactivar"))):
+    """PATCH /api/v1/proveedores/{proveedor_id}/estado: inactiva o reactiva (204)."""
     servicio.cambiar_estado(proveedor_id, datos)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

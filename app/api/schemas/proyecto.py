@@ -1,4 +1,4 @@
-# app/schemas/proyecto.py
+# app/api/schemas/proyecto.py
 # Esquemas Pydantic de la HU-05: validan la FORMA de la entrada y definen la SALIDA.
 # Si un validador lanza ValueError("mensaje"), la base común responde 422
 # VAL_FORMATO_INVALIDO con ese mensaje. Si falta un campo, 422 VAL_CAMPO_REQUERIDO.
@@ -42,11 +42,13 @@ class UbicacionDatos(BaseModel):
     @field_validator("direccion")
     @classmethod
     def validar_direccion(cls, v: str) -> str:
+        """Dirección limpia de espacios de más y con al menos 5 caracteres."""
         return _limpiar(v, "direccion", minimo=5)
 
     @field_validator("ciudad")
     @classmethod
     def validar_ciudad(cls, v: str) -> str:
+        """Ciudad limpia de espacios de más."""
         return _limpiar(v, "ciudad")
 
 
@@ -62,16 +64,19 @@ class ProyectoDatosGenerales(BaseModel):
     @field_validator("nombre")
     @classmethod
     def validar_nombre(cls, v: str) -> str:
+        """Nombre del proyecto limpio, con al menos 3 caracteres."""
         return _limpiar(v, "nombre", minimo=3)
 
     @field_validator("cliente")
     @classmethod
     def validar_cliente(cls, v: str) -> str:
+        """Cliente limpio de espacios de más."""
         return _limpiar(v, "cliente")
 
     @field_validator("descripcion")
     @classmethod
     def validar_descripcion(cls, v: Optional[str]) -> Optional[str]:
+        """La descripción es opcional: si viene vacía o solo con espacios, se guarda como null."""
         return _limpiar(v, "descripcion") if v and v.strip() else None
 
 
@@ -104,12 +109,16 @@ class ProyectoUpdate(ProyectoDatosGenerales):
 
 
 class ResponsableUpdate(BaseModel):
+    """Nuevo responsable del proyecto (PATCH /responsable)."""
+
     model_config = ConfigDict(json_schema_extra={"example": {"responsable_id": 1}})
 
     responsable_id: int = Field(..., description="Usuario activo con rol Coordinador o Director (RN-016)")
 
 
 class EstadoProyectoUpdate(BaseModel):
+    """Nuevo estado del proyecto: activo, suspendido o finalizado."""
+
     model_config = ConfigDict(json_schema_extra={"example": {"estado": "finalizado"}})
 
     estado: str = Field(..., description="activo | suspendido | finalizado")
@@ -117,6 +126,7 @@ class EstadoProyectoUpdate(BaseModel):
     @field_validator("estado")
     @classmethod
     def validar_estado(cls, v: str) -> str:
+        """El estado en minúscula y dentro de ESTADOS."""
         v = v.strip().lower()
         if v not in ESTADOS:
             raise ValueError(f"El estado debe ser uno de: {', '.join(ESTADOS)}.")
@@ -126,6 +136,8 @@ class EstadoProyectoUpdate(BaseModel):
 # ── SALIDA ────────────────────────────────────────────────
 
 class UbicacionResponse(BaseModel):
+    """La ubicación dentro de la respuesta del proyecto."""
+
     direccion: str
     ciudad: str
     latitud: Optional[float]
@@ -133,6 +145,8 @@ class UbicacionResponse(BaseModel):
 
 
 class ProyectoResponse(BaseModel):
+    """Un proyecto en las respuestas; `ubicacion` es null mientras no se registre."""
+
     proyecto_id: str               # ids SIEMPRE como texto y con sufijo _id
     nombre: str
     cliente: str
@@ -148,6 +162,12 @@ class ProyectoResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, p: Proyecto) -> "ProyectoResponse":
+        """
+        Convierte el modelo de BD de un proyecto en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+
+        Las fechas de inicio y fin salen como AAAA-MM-DD.
+        """
         ubicacion = None
         if p.tiene_ubicacion():
             ubicacion = UbicacionResponse(direccion=p.direccion, ciudad=p.ciudad,

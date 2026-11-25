@@ -26,8 +26,8 @@ from app.domain.solicitud import Solicitud, SolicitudDetalle
 from app.domain.usuario import Usuario
 from app.repositories.aprobacion_repository import AprobacionRepository
 from app.repositories.cotizacion_repository import CotizacionRepository
-from app.schemas.aprobacion import DecisionDatos
-from app.schemas.cotizacion import CotizacionCreate
+from app.api.schemas.aprobacion import DecisionDatos
+from app.api.schemas.cotizacion import CotizacionCreate
 from app.services.aprobacion_service import AprobacionService
 from app.services.cotizacion_service import CotizacionService
 

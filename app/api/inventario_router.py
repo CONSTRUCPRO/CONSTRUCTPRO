@@ -12,7 +12,7 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.inventario_repository import InventarioRepository
-from app.schemas.inventario import (
+from app.api.schemas.inventario import (
     EntradaCreate,
     EntradaResponse,
     ExistenciaResponse,
@@ -20,7 +20,7 @@ from app.schemas.inventario import (
     RecepcionResponse,
     SalidaCreate,
 )
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Respuesta
 from app.services.inventario_service import InventarioService
 
 router = APIRouter(tags=["Inventario"])
@@ -31,6 +31,10 @@ MODULO = "Inventario"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> InventarioService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return InventarioService(InventarioRepository(db))
 
 
@@ -38,6 +42,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> InventarioService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str]) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -93,6 +101,7 @@ ERROR_422_SALIDA = _ejemplo_error(
 def registrar_recepcion(orden_compra_id: int,
                         servicio: InventarioService = Depends(obtener_servicio),
                         usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
+    """PATCH /api/v1/ordenes-compra/{orden_compra_id}/recepcion: el material llegó a la obra."""
     return respuesta_exitosa(servicio.registrar_recepcion(orden_compra_id, usuario.usuario_id),
                              "Recepción de la orden registrada correctamente.")
 
@@ -108,6 +117,7 @@ def registrar_recepcion(orden_compra_id: int,
 def registrar_entrada(datos: EntradaCreate,
                       servicio: InventarioService = Depends(obtener_servicio),
                       usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
+    """POST /api/v1/inventario/entradas: entrada por la recepción de una orden (201)."""
     return respuesta_exitosa(servicio.registrar_entrada(datos, usuario.usuario_id),
                              "Entrada registrada correctamente.")
 
@@ -122,6 +132,7 @@ def registrar_entrada(datos: EntradaCreate,
 def registrar_salida(datos: SalidaCreate,
                      servicio: InventarioService = Depends(obtener_servicio),
                      usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
+    """POST /api/v1/inventario/salidas: salida de material hacia la obra (201)."""
     return respuesta_exitosa(servicio.registrar_salida(datos, usuario.usuario_id),
                              "Salida registrada correctamente.")
 
@@ -136,6 +147,7 @@ def existencias(proyecto_id: int = Query(..., description="Id del proyecto"),
                 por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
                 servicio: InventarioService = Depends(obtener_servicio),
                 usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/inventario?proyecto_id=: existencias del proyecto."""
     items, paginacion = servicio.existencias(proyecto_id, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
 
@@ -152,5 +164,6 @@ def movimientos(proyecto_id: int = Query(..., description="Id del proyecto"),
                 por_pagina: int = Query(20, ge=1, le=100, description="Registros por página"),
                 servicio: InventarioService = Depends(obtener_servicio),
                 usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/inventario/movimientos?proyecto_id=: historial de entradas y salidas."""
     items, paginacion = servicio.movimientos(proyecto_id, material_id, tipo, pagina, por_pagina)
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)

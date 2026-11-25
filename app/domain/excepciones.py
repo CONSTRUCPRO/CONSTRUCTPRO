@@ -51,6 +51,10 @@ class ConstruProError(Exception):
     def __init__(self, mensaje: str, regla: Optional[str] = None,
                  campo: Optional[str] = None, codigo: Optional[str] = None,
                  mensaje_general: Optional[str] = None):
+        """
+        Guarda los datos del error. Si no se pasa `codigo`, queda el de la clase; el mensaje
+        general sale del catálogo (Tabla 57) salvo que se envíe `mensaje_general`.
+        """
         self.mensaje = mensaje
         self.regla = regla
         self.campo = campo
@@ -69,6 +73,7 @@ class ReglaNegocioError(ConstruProError):
 
     def __init__(self, regla: str, mensaje: str, campo: Optional[str] = None,
                  codigo: Optional[str] = None, mensaje_general: Optional[str] = None):
+        """La regla (RN-xxx) va primero porque casi siempre la hay."""
         super().__init__(mensaje, regla=regla, campo=campo, codigo=codigo,
                          mensaje_general=mensaje_general)
 
@@ -79,6 +84,7 @@ class RecursoNoEncontradoError(ConstruProError):
     codigo = "REC_NO_ENCONTRADO"
 
     def __init__(self, mensaje: str, campo: Optional[str] = None):
+        """Sin regla: que algo no exista no es una regla de negocio."""
         super().__init__(mensaje, campo=campo)
 
 
@@ -88,6 +94,7 @@ class RecursoDuplicadoError(ConstruProError):
     codigo = "REC_DUPLICADO"
 
     def __init__(self, regla: str, mensaje: str, campo: Optional[str] = None):
+        """La regla dice qué dato debe ser único (RN-001, RN-031, RN-036...)."""
         super().__init__(mensaje, regla=regla, campo=campo)
 
 
@@ -98,6 +105,7 @@ class ConflictoEstadoError(ConstruProError):
 
     def __init__(self, regla: str, mensaje: str, campo: Optional[str] = None,
                  codigo: Optional[str] = None, mensaje_general: Optional[str] = None):
+        """La regla puede ser None cuando el conflicto es solo de estado (ej. 'ya está anulado')."""
         super().__init__(mensaje, regla=regla, campo=campo, codigo=codigo,
                          mensaje_general=mensaje_general)
 
@@ -109,6 +117,7 @@ class PermisoDenegadoError(ConstruProError):
 
     def __init__(self, mensaje: str, regla: Optional[str] = None,
                  campo: Optional[str] = "rol", codigo: Optional[str] = None):
+        """Por defecto el campo es 'rol', porque casi siempre falla por el rol."""
         super().__init__(mensaje, regla=regla, campo=campo, codigo=codigo)
 
 
@@ -119,4 +128,5 @@ class NoAutenticadoError(ConstruProError):
 
     def __init__(self, mensaje: str, campo: Optional[str] = None,
                  codigo: Optional[str] = None, regla: Optional[str] = None):
+        """El código puede cambiarse, por ejemplo AUT_USUARIO_INACTIVO (RN-006)."""
         super().__init__(mensaje, regla=regla, campo=campo, codigo=codigo)

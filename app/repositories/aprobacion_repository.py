@@ -14,16 +14,27 @@ from app.domain.usuario import Usuario
 
 
 class AprobacionRepository:
+    """
+    Acceso a datos de aprobaciones: solo consulta y guarda en la BD.
+    No valida reglas de negocio ni sabe de HTTP; eso es del dominio y del servicio.
+    """
 
     def __init__(self, db: Session):
+        """
+        Recibe la sesión de BD de la petición; todas las consultas de este repositorio la usan.
+        """
         self.db = db
 
     # ── Consultas ──────────────────────────────────────────
 
     def obtener_por_id(self, aprobacion_id: int) -> Optional[Aprobacion]:
+        """La aprobación con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Aprobacion, aprobacion_id)
 
     def obtener_usuario(self, usuario_id: int) -> Optional[Usuario]:
+        """
+        El usuario que decide con ese id, o None si no existe (db.get busca por llave primaria).
+        """
         return self.db.get(Usuario, usuario_id)
 
     def solicitantes_de(self, cotizacion_id: int) -> set[int]:
@@ -40,6 +51,7 @@ class AprobacionRepository:
         return set(self.db.scalars(consulta).all())
 
     def _paginar(self, consulta, orden, pagina: int, por_pagina: int) -> tuple[list[Aprobacion], int]:
+        """Cuenta el total, ordena y corta la página pedida (lo comparten listar e histórico)."""
         total = self.db.scalar(select(func.count()).select_from(consulta.subquery()))
         items = self.db.scalars(
             consulta.options(selectinload(Aprobacion.cotizacion))

@@ -11,15 +11,24 @@ from app.core.respuestas import construir_paginacion
 from app.domain.aprobacion import ESTADO_EN_REVISION, Aprobacion
 from app.domain.excepciones import NoAutenticadoError, RecursoNoEncontradoError
 from app.repositories.aprobacion_repository import AprobacionRepository
-from app.schemas.aprobacion import AprobacionResponse, DecisionDatos
+from app.api.schemas.aprobacion import AprobacionResponse, DecisionDatos
 
 
 class AprobacionService:
+    """
+    Casos de uso de la decisión de aprobación (HU-20). Orquesta: busca con el repositorio, aplica las reglas del
+    dominio y devuelve el schema de salida. Solo lanza excepciones de dominio; la capa API
+    las convierte en el sobre de error.
+    """
 
     def __init__(self, repo: AprobacionRepository):
+        """
+        Recibe el repositorio por parámetro (inyección de dependencias): en las pruebas se le pasa uno con una BD en memoria.
+        """
         self.repo = repo  # inyección de dependencia
 
     def _buscar(self, aprobacion_id: int) -> Aprobacion:
+        """Trae la aprobación por su id o lanza RecursoNoEncontradoError (404 REC_NO_ENCONTRADO)."""
         aprobacion = self.repo.obtener_por_id(aprobacion_id)
         if not aprobacion:
             raise RecursoNoEncontradoError(
@@ -30,6 +39,7 @@ class AprobacionService:
     @staticmethod
     def _pagina(items: list[Aprobacion], total: int, pagina: int,
                 por_pagina: int) -> tuple[list[AprobacionResponse], dict]:
+        """Convierte una página de aprobaciones en respuestas con su meta.paginacion."""
         return ([AprobacionResponse.desde_modelo(a) for a in items],
                 construir_paginacion(pagina, por_pagina, total))
 
@@ -42,11 +52,15 @@ class AprobacionService:
         return self._pagina(items, total, pagina, por_pagina)
 
     def obtener(self, aprobacion_id: int) -> AprobacionResponse:
+        """Una aprobación con su decisión, si ya la tiene."""
         return AprobacionResponse.desde_modelo(self._buscar(aprobacion_id))
 
     def historico(self, proyecto_id: Optional[int], aprobador_id: Optional[int],
                   desde: Optional[date], hasta: Optional[date],
                   pagina: int, por_pagina: int) -> tuple[list[AprobacionResponse], dict]:
+        """
+        FUN-079: las ya decididas, la más reciente primero, con filtros por proyecto, aprobador y fechas.
+        """
         items, total = self.repo.historico(proyecto_id, aprobador_id, desde, hasta, pagina, por_pagina)
         return self._pagina(items, total, pagina, por_pagina)
 

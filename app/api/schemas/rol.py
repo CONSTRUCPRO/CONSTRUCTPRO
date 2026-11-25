@@ -1,4 +1,4 @@
-# app/schemas/rol.py
+# app/api/schemas/rol.py
 # Esquemas Pydantic de la HU-03: validan la entrada y definen la salida.
 from typing import Literal, Optional
 
@@ -16,6 +16,9 @@ class PermisoModulo(BaseModel):
     @field_validator("modulo")
     @classmethod
     def modulo_existe(cls, v: str) -> str:
+        """
+        FUN-013: el módulo debe ser uno de MODULOS; se guarda con el nombre exacto de la lista.
+        """
         # FUN-013 paso 2: validar que los módulos existan
         for m in MODULOS:
             if m.lower() == v.strip().lower():
@@ -25,6 +28,9 @@ class PermisoModulo(BaseModel):
     @field_validator("acciones")
     @classmethod
     def acciones_validas(cls, v: list[str]) -> list[str]:
+        """
+        Las acciones se pasan a minúscula y deben estar en ACCIONES (crear, consultar, editar...).
+        """
         limpias = [a.strip().lower() for a in v]
         invalidas = [a for a in limpias if a not in ACCIONES]
         if invalidas:
@@ -42,6 +48,8 @@ def _a_diccionario(permisos: list[PermisoModulo]) -> dict[str, list[str]]:
 
 
 class RolCreate(BaseModel):
+    """Datos para crear un rol: nombre, descripción y al menos un permiso (RN-013)."""
+
     nombre: str = Field(..., min_length=3, max_length=60)
     descripcion: Optional[str] = Field(None, max_length=255)
     permisos: list[PermisoModulo] = Field(
@@ -50,34 +58,48 @@ class RolCreate(BaseModel):
     @field_validator("nombre")
     @classmethod
     def limpiar_nombre(cls, v: str) -> str:
+        """
+        Quita espacios repetidos y deja la primera letra en mayúscula: 'auxiliar  obra' -> 'Auxiliar obra'.
+        """
         return " ".join(v.split()).capitalize()
 
     def permisos_dict(self) -> dict[str, list[str]]:
+        """Convierte la lista de permisos al formato que usa el dominio: {modulo: [acciones]}."""
         return _a_diccionario(self.permisos)
 
 
 class RolUpdate(BaseModel):
+    """Datos para editar un rol: solo nombre y descripción (los permisos van por PUT /permisos)."""
+
     nombre: str = Field(..., min_length=3, max_length=60)
     descripcion: Optional[str] = Field(None, max_length=255)
 
     @field_validator("nombre")
     @classmethod
     def limpiar_nombre(cls, v: str) -> str:
+        """Mismo arreglo del nombre que al crear."""
         return " ".join(v.split()).capitalize()
 
 
 class PermisosUpdate(BaseModel):
+    """Lista completa de permisos que reemplaza a la anterior (RN-013: mínimo uno)."""
+
     permisos: list[PermisoModulo] = Field(..., description="Al menos un permiso (RN-013).")
 
     def permisos_dict(self) -> dict[str, list[str]]:
+        """Convierte la lista de permisos al formato {modulo: [acciones]}."""
         return _a_diccionario(self.permisos)
 
 
 class EstadoRolUpdate(BaseModel):
+    """Activar o inactivar un rol (Literal: Pydantic rechaza cualquier otro valor)."""
+
     estado: Literal["activo", "inactivo"]
 
 
 class RolResponse(BaseModel):
+    """Un rol en las respuestas, con sus permisos agrupados por módulo."""
+
     rol_id: str
     nombre: str
     descripcion: Optional[str]
@@ -87,6 +109,10 @@ class RolResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, rol: Rol) -> "RolResponse":
+        """
+        Convierte el modelo de BD de un rol en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(
             rol_id=str(rol.id),
             nombre=rol.nombre,
@@ -106,6 +132,10 @@ class PermisosRolResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, rol: Rol) -> "PermisosRolResponse":
+        """
+        Convierte el modelo de BD de los permisos de un rol en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(
             rol_id=str(rol.id),
             nombre=rol.nombre,

@@ -11,13 +11,21 @@ from app.domain.cotizacion import ESTADO_ANULADA, Cotizacion, CotizacionDetalle
 
 
 class CotizacionRepository:
+    """
+    Acceso a datos de cotizaciones y sus aprobaciones: solo consulta y guarda en la BD.
+    No valida reglas de negocio ni sabe de HTTP; eso es del dominio y del servicio.
+    """
 
     def __init__(self, db: Session):
+        """
+        Recibe la sesión de BD de la petición; todas las consultas de este repositorio la usan.
+        """
         self.db = db
 
     # ── Consultas ──────────────────────────────────────────
 
     def obtener_por_id(self, cotizacion_id: int) -> Optional[Cotizacion]:
+        """La cotización con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Cotizacion, cotizacion_id)
 
     def obtener_comparativos(self, ids: list[int]) -> dict[int, Comparativo]:
@@ -35,6 +43,10 @@ class CotizacionRepository:
         ).all())
 
     def ultima_aprobacion(self, cotizacion_id: int) -> Optional[Aprobacion]:
+        """
+        La aprobación más reciente de la cotización, o None si nunca se envió. Se busca por
+        consulta porque la Cotización no importa a la Aprobación (evita un import circular).
+        """
         return self.db.scalar(
             select(Aprobacion).where(Aprobacion.cotizacion_id == cotizacion_id)
             .order_by(Aprobacion.id.desc()).limit(1)

@@ -11,8 +11,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.pago_repository import PagoRepository
-from app.schemas.pago import AnulacionPago, PagoCreate, PagoResponse, PagosOrdenResponse
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.pago import AnulacionPago, PagoCreate, PagoResponse, PagosOrdenResponse
+from app.api.schemas.respuesta import Respuesta
 from app.services.pago_service import PagoService
 
 router = APIRouter(tags=["Pagos"])
@@ -23,6 +23,10 @@ MODULO = "Pagos"
 
 
 def obtener_servicio(db: Session = Depends(get_db)) -> PagoService:
+    """
+    Arma el servicio con su repositorio y la sesión de BD de esta petición (inyección de
+    dependencias). Los endpoints lo reciben con Depends(obtener_servicio).
+    """
     return PagoService(PagoRepository(db))
 
 
@@ -30,6 +34,10 @@ def obtener_servicio(db: Session = Depends(get_db)) -> PagoService:
 
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str]) -> dict:
+    """
+    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
+    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    """
     return {
         "description": descripcion,
         "content": {"application/json": {"example": {
@@ -86,6 +94,7 @@ ERROR_422_PAGO = _ejemplo_error(
 def registrar_pago(datos: PagoCreate,
                    servicio: PagoService = Depends(obtener_servicio),
                    usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "crear"))):
+    """POST /api/v1/pagos: registra un pago de una orden (201)."""
     return respuesta_exitosa(servicio.registrar(datos, usuario.usuario_id),
                              "Pago registrado correctamente.")
 
@@ -100,6 +109,7 @@ def registrar_pago(datos: PagoCreate,
 def pagos_de_orden(orden_compra_id: int,
                    servicio: PagoService = Depends(obtener_servicio),
                    usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "consultar"))):
+    """GET /api/v1/ordenes-compra/{orden_compra_id}/pagos: pagos de la orden y su saldo."""
     return respuesta_exitosa(servicio.pagos_de_orden(orden_compra_id),
                              "Consulta realizada correctamente.")
 
@@ -113,5 +123,6 @@ def pagos_de_orden(orden_compra_id: int,
 def anular_pago(pago_id: int, datos: Optional[AnulacionPago] = None,
                 servicio: PagoService = Depends(obtener_servicio),
                 usuario: UsuarioActual = Depends(requiere_permiso(MODULO, "anular"))):
+    """PATCH /api/v1/pagos/{pago_id}/anular: anula un pago del mismo día."""
     return respuesta_exitosa(servicio.anular(pago_id, datos or AnulacionPago()),
                              "Pago anulado correctamente.")

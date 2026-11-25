@@ -11,12 +11,20 @@ from app.domain.proyecto import Proyecto
 from app.domain.solicitud import Solicitud
 from app.domain.usuario import Usuario
 from app.repositories.solicitud_repository import SolicitudRepository
-from app.schemas.solicitud import LineaSolicitud, SolicitudCreate, SolicitudResponse, SolicitudUpdate
+from app.api.schemas.solicitud import LineaSolicitud, SolicitudCreate, SolicitudResponse, SolicitudUpdate
 
 
 class SolicitudService:
+    """
+    Casos de uso de solicitudes de materiales (HU-12). Orquesta: busca con el repositorio, aplica las reglas del
+    dominio y devuelve el schema de salida. Solo lanza excepciones de dominio; la capa API
+    las convierte en el sobre de error.
+    """
 
     def __init__(self, repo: SolicitudRepository):
+        """
+        Recibe el repositorio por parámetro (inyección de dependencias): en las pruebas se le pasa uno con una BD en memoria.
+        """
         self.repo = repo  # inyección de dependencia
 
     # ── Apoyos internos ────────────────────────────────────
@@ -37,6 +45,7 @@ class SolicitudService:
         return usuario
 
     def _buscar(self, solicitud_id: int) -> Solicitud:
+        """Trae la solicitud por su id o lanza RecursoNoEncontradoError (404 REC_NO_ENCONTRADO)."""
         solicitud = self.repo.obtener_por_id(solicitud_id)
         if not solicitud:
             raise RecursoNoEncontradoError(
@@ -45,6 +54,7 @@ class SolicitudService:
         return solicitud
 
     def _buscar_proyecto(self, proyecto_id: int) -> Proyecto:
+        """Trae el proyecto por su id o lanza RecursoNoEncontradoError (404 REC_NO_ENCONTRADO)."""
         proyecto = self.repo.obtener_proyecto(proyecto_id)
         if not proyecto:
             raise RecursoNoEncontradoError(
@@ -66,6 +76,11 @@ class SolicitudService:
     # ── Casos de uso ───────────────────────────────────────
 
     def crear(self, datos: SolicitudCreate, usuario_id: Optional[str]) -> SolicitudResponse:
+        """
+        Crea la solicitud pendiente. Valida el proyecto con verificar_admite_solicitudes()
+        (RN-041 activo, RN-020 ubicación, RN-021 presupuesto), las líneas (RN-042, RN-043) y que
+        cada material exista y esté activo (RN-034).
+        """
         solicitante = self._usuario_actual(usuario_id)                  # 401
         proyecto = self._buscar_proyecto(datos.proyecto_id)             # 404
         proyecto.verificar_admite_solicitudes()                         # RN-041, RN-020, RN-021
@@ -74,16 +89,22 @@ class SolicitudService:
         return SolicitudResponse.desde_modelo(self.repo.guardar(solicitud))
 
     def obtener(self, solicitud_id: int) -> SolicitudResponse:
+        """Una solicitud con sus líneas."""
         return SolicitudResponse.desde_modelo(self._buscar(solicitud_id))
 
     def listar(self, proyecto_id: Optional[int], estado: Optional[str],
                pagina: int, por_pagina: int) -> tuple[list[SolicitudResponse], dict]:
+        """Lista paginada (la más reciente primero) con filtros por proyecto y estado."""
         items, total = self.repo.listar(proyecto_id, estado, pagina, por_pagina)
         return ([SolicitudResponse.desde_modelo(s) for s in items],
                 construir_paginacion(pagina, por_pagina, total))
 
     def editar(self, solicitud_id: int, datos: SolicitudUpdate,
                usuario_id: Optional[str]) -> SolicitudResponse:
+        """
+        Reemplaza el detalle. Solo el solicitante o el responsable (RN-044), solo si está
+        pendiente y si no tiene una cotización aprobada (RN-045).
+        """
         usuario = self._usuario_actual(usuario_id)                      # 401
         solicitud = self._buscar(solicitud_id)                          # 404
         solicitud.verificar_autor(usuario.id)                           # RN-044 (403)
@@ -95,6 +116,7 @@ class SolicitudService:
         return SolicitudResponse.desde_modelo(self.repo.guardar(solicitud))
 
     def anular(self, solicitud_id: int, usuario_id: Optional[str]) -> SolicitudResponse:
+        """Anula la solicitud con las mismas condiciones que editar (RN-044, pendiente, RN-045)."""
         usuario = self._usuario_actual(usuario_id)                      # 401
         solicitud = self._buscar(solicitud_id)                          # 404
         solicitud.verificar_autor(usuario.id)                           # RN-044 (403)

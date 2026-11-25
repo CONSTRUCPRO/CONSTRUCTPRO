@@ -10,7 +10,7 @@ from app.domain.inventario import TIPO_ENTRADA, TIPO_SALIDA, Inventario, Movimie
 from app.domain.orden_compra import OrdenCompra
 from app.domain.proyecto import Proyecto
 from app.repositories.inventario_repository import InventarioRepository
-from app.schemas.inventario import (
+from app.api.schemas.inventario import (
     EntradaCreate,
     EntradaResponse,
     ExistenciaResponse,
@@ -21,17 +21,27 @@ from app.schemas.inventario import (
 
 
 def _a_entero(usuario_id: Optional[str]) -> Optional[int]:
+    """El usuario_id del token llega como texto; se guarda como número (None si no viene)."""
     return int(usuario_id) if usuario_id and str(usuario_id).isdigit() else None
 
 
 class InventarioService:
+    """
+    Casos de uso de la recepción de órdenes y el inventario (HU-29). Orquesta: busca con el repositorio, aplica las reglas del
+    dominio y devuelve el schema de salida. Solo lanza excepciones de dominio; la capa API
+    las convierte en el sobre de error.
+    """
 
     def __init__(self, repo: InventarioRepository):
+        """
+        Recibe el repositorio por parámetro (inyección de dependencias): en las pruebas se le pasa uno con una BD en memoria.
+        """
         self.repo = repo  # inyección de dependencia
 
     # ── Apoyos internos ────────────────────────────────────
 
     def _buscar_orden(self, orden_compra_id: int) -> OrdenCompra:
+        """Trae la orden por su id o lanza RecursoNoEncontradoError (404 REC_NO_ENCONTRADO)."""
         orden = self.repo.obtener_orden(orden_compra_id)
         if not orden:
             raise RecursoNoEncontradoError(
@@ -40,6 +50,7 @@ class InventarioService:
         return orden
 
     def _buscar_proyecto(self, proyecto_id: int) -> Proyecto:
+        """Trae el proyecto por su id o lanza RecursoNoEncontradoError (404 REC_NO_ENCONTRADO)."""
         proyecto = self.repo.obtener_proyecto(proyecto_id)
         if not proyecto:
             raise RecursoNoEncontradoError(
@@ -62,6 +73,10 @@ class InventarioService:
 
     def registrar_recepcion(self, orden_compra_id: int,
                             usuario_id: Optional[str]) -> RecepcionResponse:
+        """
+        Registra que el material de la orden llegó a la obra (RN-112: quién recibe). Si la orden ya
+        estaba pagada por completo, se cierra (RN-087).
+        """
         orden = self._buscar_orden(orden_compra_id)                        # 404
         orden.registrar_recepcion(_a_entero(usuario_id))                   # RN-089, RN-112
         orden.cerrar_si_completa(self.repo.total_pagado(orden.id))         # RN-087
@@ -70,6 +85,10 @@ class InventarioService:
 
     def registrar_entrada(self, datos: EntradaCreate,
                           usuario_id: Optional[str]) -> EntradaResponse:
+        """
+        Entrada al inventario de todas las líneas de una orden recibida (RN-121). Cada línea deja
+        su movimiento; la misma orden no entra dos veces (409).
+        """
         orden = self._buscar_orden(datos.orden_compra_id)                  # 404
         orden.verificar_recibida()                                         # RN-121
         if self.repo.entrada_registrada(orden.id):
@@ -89,6 +108,7 @@ class InventarioService:
                                movimientos=[MovimientoResponse.desde_modelo(m) for m in movimientos])
 
     def registrar_salida(self, datos: SalidaCreate, usuario_id: Optional[str]) -> MovimientoResponse:
+        """Salida de material hacia la obra (RN-122: no más de lo que hay)."""
         self._buscar_proyecto(datos.proyecto_id)                           # 404
         inventario = self._inventario(datos.proyecto_id, datos.material_id)
         movimiento = MovimientoInventario.registrar(                       # RN-122, cantidad > 0
@@ -98,6 +118,7 @@ class InventarioService:
 
     def existencias(self, proyecto_id: int, pagina: int,
                     por_pagina: int) -> tuple[list[ExistenciaResponse], dict]:
+        """Existencias actuales del proyecto, paginadas."""
         self._buscar_proyecto(proyecto_id)                                 # 404
         items, total = self.repo.listar_existencias(proyecto_id, pagina, por_pagina)
         return ([ExistenciaResponse.desde_modelo(i) for i in items],
@@ -105,6 +126,7 @@ class InventarioService:
 
     def movimientos(self, proyecto_id: int, material_id: Optional[int], tipo: Optional[str],
                     pagina: int, por_pagina: int) -> tuple[list[MovimientoResponse], dict]:
+        """Movimientos del proyecto (entradas y salidas) con filtros por material y tipo."""
         self._buscar_proyecto(proyecto_id)                                 # 404
         items, total = self.repo.listar_movimientos(proyecto_id, material_id, tipo, pagina, por_pagina)
         return ([MovimientoResponse.desde_modelo(m) for m in items],

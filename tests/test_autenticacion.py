@@ -20,8 +20,8 @@ from app.domain.sesion import Sesion, hash_token
 from app.domain.usuario import Usuario, ahora_utc_sin_zona
 from app.repositories.sesion_repository import SesionRepository
 from app.repositories.usuario_repository import UsuarioRepository
-from app.schemas.auth import LoginDatos, RenovarDatos
-from app.schemas.usuario import EstadoUsuarioUpdate
+from app.api.schemas.auth import LoginDatos, RenovarDatos
+from app.api.schemas.usuario import EstadoUsuarioUpdate
 from app.services.auth_service import AuthService
 from app.services.usuario_service import UsuarioService
 

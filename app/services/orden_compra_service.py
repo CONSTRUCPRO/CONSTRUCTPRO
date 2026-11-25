@@ -8,19 +8,29 @@ from app.core.respuestas import construir_paginacion
 from app.domain.excepciones import RecursoDuplicadoError, RecursoNoEncontradoError
 from app.domain.orden_compra import OrdenCompra
 from app.repositories.orden_compra_repository import OrdenCompraRepository
-from app.schemas.orden_compra import AnulacionDatos, OrdenCompraCreate, OrdenCompraResponse
+from app.api.schemas.orden_compra import AnulacionDatos, OrdenCompraCreate, OrdenCompraResponse
 
 
 def _a_entero(usuario_id: Optional[str]) -> Optional[int]:
+    """El usuario_id del token llega como texto; se guarda como número (None si no viene)."""
     return int(usuario_id) if usuario_id and str(usuario_id).isdigit() else None
 
 
 class OrdenCompraService:
+    """
+    Casos de uso de órdenes de compra (HU-21). Orquesta: busca con el repositorio, aplica las reglas del
+    dominio y devuelve el schema de salida. Solo lanza excepciones de dominio; la capa API
+    las convierte en el sobre de error.
+    """
 
     def __init__(self, repo: OrdenCompraRepository):
+        """
+        Recibe el repositorio por parámetro (inyección de dependencias): en las pruebas se le pasa uno con una BD en memoria.
+        """
         self.repo = repo  # inyección de dependencia
 
     def _buscar(self, orden_id: int) -> OrdenCompra:
+        """Trae la orden por su id o lanza RecursoNoEncontradoError (404 REC_NO_ENCONTRADO)."""
         orden = self.repo.obtener_por_id(orden_id)
         if not orden:
             raise RecursoNoEncontradoError(
@@ -48,10 +58,12 @@ class OrdenCompraService:
         return OrdenCompraResponse.desde_modelo(self.repo.guardar(orden))
 
     def obtener(self, orden_id: int) -> OrdenCompraResponse:
+        """Una orden con su detalle (FUN-083)."""
         return OrdenCompraResponse.desde_modelo(self._buscar(orden_id))
 
     def listar(self, proyecto_id: Optional[int], proveedor_id: Optional[int], estado: Optional[str],
                pagina: int, por_pagina: int) -> tuple[list[OrdenCompraResponse], dict]:
+        """Lista paginada con filtros por proyecto, proveedor y estado."""
         items, total = self.repo.listar(proyecto_id, proveedor_id, estado, pagina, por_pagina)
         return ([OrdenCompraResponse.desde_modelo(o) for o in items],
                 construir_paginacion(pagina, por_pagina, total))

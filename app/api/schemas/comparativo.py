@@ -1,4 +1,4 @@
-# app/schemas/comparativo.py
+# app/api/schemas/comparativo.py
 # Esquemas Pydantic: validan la FORMA de la entrada y definen la forma de la SALIDA
 # (lo que va dentro de "datos" en el sobre estándar).
 # Las reglas RN-056 a RN-060 NO van aquí: van en el dominio, para que el error llegue con su regla.
@@ -11,6 +11,9 @@ from app.domain.comparativo import Comparativo, ComparativoOferta
 
 
 def _dinero(valor) -> Optional[float]:
+    """
+    Decimal de la BD (que ya trae 2 decimales) a float para el JSON; None se mantiene como null.
+    """
     return None if valor is None else float(valor)
 
 
@@ -40,6 +43,8 @@ class SeleccionDatos(BaseModel):
 # ── SALIDA ────────────────────────────────────────────────
 
 class OfertaComparativoResponse(BaseModel):
+    """Una oferta dentro del comparativo."""
+
     proveedor_id: str
     precio: float
     disponible: bool
@@ -47,11 +52,19 @@ class OfertaComparativoResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, o: ComparativoOferta) -> "OfertaComparativoResponse":
+        """
+        Convierte el modelo de BD de una oferta del comparativo en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+        """
         return cls(proveedor_id=str(o.proveedor_id), precio=float(o.precio),
                    disponible=o.disponible, dias_entrega=o.dias_entrega)
 
 
 class ComparativoResponse(BaseModel):
+    """
+    El comparativo con sus ofertas, los precios mínimo y máximo y, si ya hay selección, el ahorro.
+    """
+
     comparativo_id: str
     solicitud_id: str
     material_id: str

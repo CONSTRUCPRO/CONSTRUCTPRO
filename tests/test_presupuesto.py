@@ -21,7 +21,7 @@ from app.domain.proyecto import Proyecto
 from app.domain.rol import Rol
 from app.domain.usuario import Usuario
 from app.repositories.presupuesto_repository import PresupuestoRepository
-from app.schemas.presupuesto import PresupuestoDatos
+from app.api.schemas.presupuesto import PresupuestoDatos
 from app.services.presupuesto_service import PresupuestoService
 
 

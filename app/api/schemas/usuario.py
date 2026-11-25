@@ -1,4 +1,4 @@
-# app/schemas/usuario.py
+# app/api/schemas/usuario.py
 # Esquemas Pydantic de la HU-01: validan la FORMA de la entrada y definen la SALIDA.
 # Si un validador lanza ValueError("mensaje"), la base común responde 422
 # VAL_FORMATO_INVALIDO con ese mensaje. Si falta un campo, 422 VAL_CAMPO_REQUERIDO.
@@ -21,6 +21,7 @@ PATRON_CORREO = re.compile(r"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$")
 # ── Validaciones reutilizables ────────────────────────────
 
 def _limpiar_nombre(v: str) -> str:
+    """Quita espacios de más y exige al menos 3 caracteres."""
     v = " ".join(v.split())  # quita espacios al inicio, al final y repetidos
     if len(v) < 3:
         raise ValueError("El nombre completo debe tener al menos 3 caracteres.")
@@ -28,6 +29,7 @@ def _limpiar_nombre(v: str) -> str:
 
 
 def _validar_tipo_documento(v: str) -> str:
+    """El tipo de documento en mayúscula y dentro de TIPOS_DOCUMENTO (CC, CE, TI, PA, NIT)."""
     v = v.strip().upper()
     if v not in TIPOS_DOCUMENTO:
         raise ValueError(f"El tipo de documento debe ser uno de: {', '.join(TIPOS_DOCUMENTO)}.")
@@ -35,6 +37,7 @@ def _validar_tipo_documento(v: str) -> str:
 
 
 def _validar_documento(v: str) -> str:
+    """Quita puntos y espacios (acepta '1.098.765.432') y exige de 5 a 15 letras o dígitos."""
     v = v.replace(" ", "").replace(".", "").upper()  # acepta 1.098.765.432
     if not PATRON_DOCUMENTO.match(v):
         raise ValueError("El número de documento debe tener de 5 a 15 letras o dígitos, "
@@ -43,6 +46,7 @@ def _validar_documento(v: str) -> str:
 
 
 def _validar_correo(v: str) -> str:
+    """Correo en minúscula con la forma algo@dominio.ext."""
     v = v.strip().lower()
     if not PATRON_CORREO.match(v):
         raise ValueError("El correo no tiene un formato válido. Ejemplo: laura@construpro.co.")
@@ -50,6 +54,7 @@ def _validar_correo(v: str) -> str:
 
 
 def _validar_telefono(v: str) -> str:
+    """Quita espacios, guiones y paréntesis y exige de 7 a 15 dígitos (con + opcional)."""
     v = re.sub(r"[\s\-()]", "", v)  # acepta (300) 123-4567
     if not PATRON_TELEFONO.match(v):
         raise ValueError("El teléfono debe tener de 7 a 15 dígitos (puede empezar con +). "
@@ -70,26 +75,31 @@ class UsuarioPerfil(BaseModel):
     @field_validator("nombre_completo")
     @classmethod
     def validar_nombre(cls, v: str) -> str:
+        """Aplica _limpiar_nombre al nombre completo."""
         return _limpiar_nombre(v)
 
     @field_validator("tipo_documento")
     @classmethod
     def validar_tipo_documento(cls, v: str) -> str:
+        """Aplica _validar_tipo_documento."""
         return _validar_tipo_documento(v)
 
     @field_validator("numero_documento")
     @classmethod
     def validar_documento(cls, v: str) -> str:
+        """Aplica _validar_documento."""
         return _validar_documento(v)
 
     @field_validator("correo")
     @classmethod
     def validar_correo(cls, v: str) -> str:
+        """Aplica _validar_correo."""
         return _validar_correo(v)
 
     @field_validator("telefono")
     @classmethod
     def validar_telefono(cls, v: str) -> str:
+        """Aplica _validar_telefono."""
         return _validar_telefono(v)
 
 
@@ -113,6 +123,7 @@ class UsuarioCreate(UsuarioPerfil):
     @field_validator("contrasena")
     @classmethod
     def validar_contrasena(cls, v: str) -> str:
+        """Contraseña de mínimo 8 caracteres con al menos una letra y un número."""
         if len(v) < 8 or not re.search(r"[A-Za-z]", v) or not re.search(r"\d", v):
             raise ValueError("La contraseña debe tener mínimo 8 caracteres, "
                              "con al menos una letra y un número.")
@@ -131,6 +142,8 @@ class UsuarioUpdate(UsuarioPerfil):
 
 
 class EstadoUsuarioUpdate(BaseModel):
+    """Activar o inactivar un usuario."""
+
     model_config = ConfigDict(json_schema_extra={"example": {"estado": "inactivo"}})
 
     estado: str = Field(..., description="'inactivo' para inactivar o 'activo' para reactivar")
@@ -138,6 +151,7 @@ class EstadoUsuarioUpdate(BaseModel):
     @field_validator("estado")
     @classmethod
     def validar_estado(cls, v: str) -> str:
+        """Solo 'activo' o 'inactivo' (en minúscula)."""
         v = v.strip().lower()
         if v not in (ESTADO_ACTIVO, ESTADO_INACTIVO):
             raise ValueError("El estado debe ser 'activo' o 'inactivo'.")
@@ -145,6 +159,8 @@ class EstadoUsuarioUpdate(BaseModel):
 
 
 class RolUsuarioUpdate(BaseModel):
+    """Cambiar el rol de un usuario (PATCH /usuarios/{id}/rol)."""
+
     model_config = ConfigDict(json_schema_extra={"example": {"rol_id": 3}})
 
     rol_id: int = Field(..., description="Nuevo rol del usuario (debe existir y estar activo)")
@@ -168,6 +184,12 @@ class UsuarioResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, u: Usuario) -> "UsuarioResponse":
+        """
+        Convierte el modelo de BD de un usuario en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+
+        Nunca incluye la contraseña ni su hash (RN-003).
+        """
         return cls(
             usuario_id=str(u.id),
             nombre_completo=u.nombre_completo,

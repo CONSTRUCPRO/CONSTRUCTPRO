@@ -1,4 +1,4 @@
-# app/schemas/presupuesto.py
+# app/api/schemas/presupuesto.py
 # Esquemas Pydantic de la HU-06: validan la entrada y definen la salida.
 # El monto debe ser mayor que cero: si no, 422 VAL_FORMATO_INVALIDO con el mensaje en español.
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -22,6 +22,7 @@ class PresupuestoDatos(BaseModel):
     @field_validator("presupuesto_total")
     @classmethod
     def validar_monto(cls, v: float) -> float:
+        """El monto debe ser mayor que cero y razonable; se redondea a 2 decimales."""
         if v <= 0:
             raise ValueError("El presupuesto debe ser mayor que cero.")
         if v >= 10 ** 14:
@@ -31,6 +32,7 @@ class PresupuestoDatos(BaseModel):
     @field_validator("moneda")
     @classmethod
     def validar_moneda(cls, v: str) -> str:
+        """La moneda es opcional pero, si viene, solo se acepta COP."""
         v = v.strip().upper()
         if v != MONEDA:
             raise ValueError("La moneda del presupuesto debe ser COP.")
@@ -51,6 +53,12 @@ class PresupuestoResponse(BaseModel):
 
     @classmethod
     def desde_modelo(cls, p: Presupuesto) -> "PresupuestoResponse":
+        """
+        Convierte el modelo de BD de el presupuesto en la respuesta de la API: ids como texto con sufijo
+        _id, dinero como float con su moneda y fechas en ISO 8601 (convenciones del Componente F).
+
+        El saldo disponible se calcula en el modelo, no se guarda.
+        """
         return cls(
             proyecto_id=str(p.proyecto_id),
             presupuesto_total=float(p.presupuesto_total),

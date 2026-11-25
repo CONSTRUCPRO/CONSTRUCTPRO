@@ -29,6 +29,7 @@ ESTADO_CERRADA = "cerrada"
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
@@ -43,6 +44,12 @@ def nuevo_token_renovacion() -> str:
 
 
 class Sesion(Base):
+    """
+    Una sesión abierta con login (tabla sesiones). Cada token de acceso lleva el id de su
+    sesión: si la sesión se cierra (logout) o queda desactualizada (RN-009), el token deja
+    de servir aunque todavía no haya vencido.
+    """
+
     __tablename__ = "sesiones"
 
     id: Mapped[int] = mapped_column(primary_key=True)

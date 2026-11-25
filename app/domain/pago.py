@@ -32,10 +32,14 @@ METODOS_PAGO = ("transferencia", "pse", "consignacion", "cheque", "tarjeta", "ef
 
 
 def _ahora_utc() -> datetime:
+    """Hora actual en UTC: todas las fechas del sistema se guardan en UTC (Componente F)."""
     return datetime.now(timezone.utc)
 
 
 def hoy_colombia() -> date:
+    """
+    La fecha de hoy en Colombia: con ella se decide 'el mismo día' (RN-094) y 'fecha no futura' (RN-093).
+    """
     return datetime.now(ZONA_COLOMBIA).date()
 
 
@@ -47,6 +51,12 @@ def dia_colombia(momento: datetime) -> date:
 
 
 class Pago(Base):
+    """
+    Un pago a una orden de compra (tabla pagos): monto en COP, método, fecha, número de
+    transacción interno y estado (registrado o anulado). Al registrarse mueve el dinero de
+    comprometido a ejecutado en el presupuesto; si se anula, lo devuelve.
+    """
+
     __tablename__ = "pagos"
 
     id: Mapped[int] = mapped_column(primary_key=True)

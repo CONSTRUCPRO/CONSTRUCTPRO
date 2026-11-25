@@ -11,13 +11,21 @@ from app.domain.usuario import Usuario
 
 
 class ProyectoRepository:
+    """
+    Acceso a datos de proyectos: solo consulta y guarda en la BD.
+    No valida reglas de negocio ni sabe de HTTP; eso es del dominio y del servicio.
+    """
 
     def __init__(self, db: Session):
+        """
+        Recibe la sesión de BD de la petición; todas las consultas de este repositorio la usan.
+        """
         self.db = db
 
     # ── Consultas ──────────────────────────────────────────
 
     def obtener_por_id(self, proyecto_id: int) -> Optional[Proyecto]:
+        """El proyecto con ese id, o None si no existe (db.get busca por llave primaria)."""
         return self.db.get(Proyecto, proyecto_id)
 
     def obtener_usuario(self, usuario_id: int) -> Optional[Usuario]:

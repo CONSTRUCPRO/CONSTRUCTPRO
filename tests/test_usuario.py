@@ -18,8 +18,8 @@ from app.domain.excepciones import (
 from app.domain.rol import Rol
 from app.repositories.rol_repository import RolRepository
 from app.repositories.usuario_repository import UsuarioRepository
-from app.schemas.rol import EstadoRolUpdate
-from app.schemas.usuario import (
+from app.api.schemas.rol import EstadoRolUpdate
+from app.api.schemas.usuario import (
     EstadoUsuarioUpdate,
     RolUsuarioUpdate,
     UsuarioCreate,
