@@ -1,4 +1,4 @@
-# app/schemas/comparativo.py
+# app/api/schemas/comparativo.py
 # Esquemas Pydantic: validan la FORMA de la entrada y definen la forma de la SALIDA
 # (lo que va dentro de "datos" en el sobre estándar).
 # Las reglas RN-056 a RN-060 NO van aquí: van en el dominio, para que el error llegue con su regla.

@@ -11,8 +11,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, obtener_usuario_actual
 from app.repositories.sesion_repository import SesionRepository
-from app.schemas.auth import LoginDatos, RenovarDatos, SesionResponse
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.auth import LoginDatos, RenovarDatos, SesionResponse
+from app.api.schemas.respuesta import Respuesta
 from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Autenticación"])

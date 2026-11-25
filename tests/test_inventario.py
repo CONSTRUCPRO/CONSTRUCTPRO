@@ -26,7 +26,7 @@ from app.domain.rol import Rol
 from app.domain.usuario import Usuario
 from app.repositories.inventario_repository import InventarioRepository
 from app.repositories.orden_compra_repository import OrdenCompraRepository
-from app.schemas.inventario import EntradaCreate, SalidaCreate
+from app.api.schemas.inventario import EntradaCreate, SalidaCreate
 from app.services.inventario_service import InventarioService
 
 

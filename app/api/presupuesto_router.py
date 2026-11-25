@@ -11,8 +11,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso, requiere_rol
 from app.repositories.presupuesto_repository import PresupuestoRepository
-from app.schemas.presupuesto import PresupuestoDatos, PresupuestoResponse
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.presupuesto import PresupuestoDatos, PresupuestoResponse
+from app.api.schemas.respuesta import Respuesta
 from app.services.presupuesto_service import PresupuestoService
 
 router = APIRouter(prefix="/api/v1/proyectos", tags=["Presupuesto del proyecto"])

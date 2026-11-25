@@ -1,4 +1,4 @@
-# app/schemas/proyecto.py
+# app/api/schemas/proyecto.py
 # Esquemas Pydantic de la HU-05: validan la FORMA de la entrada y definen la SALIDA.
 # Si un validador lanza ValueError("mensaje"), la base común responde 422
 # VAL_FORMATO_INVALIDO con ese mensaje. Si falta un campo, 422 VAL_CAMPO_REQUERIDO.

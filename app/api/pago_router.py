@@ -11,8 +11,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.pago_repository import PagoRepository
-from app.schemas.pago import AnulacionPago, PagoCreate, PagoResponse, PagosOrdenResponse
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.pago import AnulacionPago, PagoCreate, PagoResponse, PagosOrdenResponse
+from app.api.schemas.respuesta import Respuesta
 from app.services.pago_service import PagoService
 
 router = APIRouter(tags=["Pagos"])

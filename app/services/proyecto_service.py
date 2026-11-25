@@ -8,7 +8,7 @@ from app.core.respuestas import construir_paginacion
 from app.domain.excepciones import RecursoDuplicadoError, RecursoNoEncontradoError
 from app.domain.proyecto import Proyecto
 from app.repositories.proyecto_repository import ProyectoRepository
-from app.schemas.proyecto import (
+from app.api.schemas.proyecto import (
     EstadoProyectoUpdate,
     ProyectoCreate,
     ProyectoResponse,

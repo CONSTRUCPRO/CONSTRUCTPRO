@@ -25,7 +25,7 @@ from app.domain.rol import Rol
 from app.domain.solicitud import Solicitud, SolicitudDetalle
 from app.domain.usuario import Usuario
 from app.repositories.cotizacion_repository import CotizacionRepository
-from app.schemas.cotizacion import CotizacionCreate
+from app.api.schemas.cotizacion import CotizacionCreate
 from app.services.cotizacion_service import CotizacionService
 
 

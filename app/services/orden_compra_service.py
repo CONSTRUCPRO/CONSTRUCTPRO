@@ -8,7 +8,7 @@ from app.core.respuestas import construir_paginacion
 from app.domain.excepciones import RecursoDuplicadoError, RecursoNoEncontradoError
 from app.domain.orden_compra import OrdenCompra
 from app.repositories.orden_compra_repository import OrdenCompraRepository
-from app.schemas.orden_compra import AnulacionDatos, OrdenCompraCreate, OrdenCompraResponse
+from app.api.schemas.orden_compra import AnulacionDatos, OrdenCompraCreate, OrdenCompraResponse
 
 
 def _a_entero(usuario_id: Optional[str]) -> Optional[int]:

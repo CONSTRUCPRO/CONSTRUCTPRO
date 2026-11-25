@@ -10,13 +10,13 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.proveedor_repository import ProveedorRepository
-from app.schemas.proveedor import (
+from app.api.schemas.proveedor import (
     EstadoProveedorUpdate,
     ProveedorCreate,
     ProveedorResponse,
     ProveedorUpdate,
 )
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Respuesta
 from app.services.proveedor_service import ProveedorService
 
 router = APIRouter(prefix="/api/v1/proveedores", tags=["Proveedores"])

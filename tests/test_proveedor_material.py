@@ -16,7 +16,7 @@ from app.domain.excepciones import (
 from app.domain.material import Categoria, Material
 from app.domain.proveedor import Proveedor
 from app.repositories.proveedor_material_repository import ProveedorMaterialRepository
-from app.schemas.proveedor_material import OfertaCreate
+from app.api.schemas.proveedor_material import OfertaCreate
 from app.services.proveedor_material_service import ProveedorMaterialService
 
 

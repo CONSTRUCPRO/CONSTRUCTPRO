@@ -13,8 +13,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.aprobacion_repository import AprobacionRepository
-from app.schemas.aprobacion import AprobacionResponse, DecisionDatos
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.aprobacion import AprobacionResponse, DecisionDatos
+from app.api.schemas.respuesta import Respuesta
 from app.services.aprobacion_service import AprobacionService
 
 router = APIRouter(prefix="/api/v1/aprobaciones", tags=["Aprobaciones"])

@@ -1,4 +1,4 @@
-# app/schemas/material.py
+# app/api/schemas/material.py
 # Esquemas Pydantic: validan la FORMA de la entrada y definen la forma de la SALIDA
 # (lo que va dentro de "datos" en el sobre estándar).
 # Las reglas de negocio (RN-032 unidad, RN-033 precio) NO van aquí: van en el dominio,

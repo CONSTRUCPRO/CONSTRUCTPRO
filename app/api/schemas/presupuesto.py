@@ -1,4 +1,4 @@
-# app/schemas/presupuesto.py
+# app/api/schemas/presupuesto.py
 # Esquemas Pydantic de la HU-06: validan la entrada y definen la salida.
 # El monto debe ser mayor que cero: si no, 422 VAL_FORMATO_INVALIDO con el mensaje en español.
 from pydantic import BaseModel, ConfigDict, Field, field_validator

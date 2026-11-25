@@ -1,4 +1,4 @@
-# app/schemas/proveedor.py
+# app/api/schemas/proveedor.py
 # Esquemas Pydantic: validan la FORMA de la entrada y definen la forma de la SALIDA
 # (lo que va dentro de "datos" en el sobre estándar).
 # El formato de NIT, teléfono y correo se valida aquí: si falla, la base común

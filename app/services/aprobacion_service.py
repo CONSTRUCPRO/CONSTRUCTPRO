@@ -11,7 +11,7 @@ from app.core.respuestas import construir_paginacion
 from app.domain.aprobacion import ESTADO_EN_REVISION, Aprobacion
 from app.domain.excepciones import NoAutenticadoError, RecursoNoEncontradoError
 from app.repositories.aprobacion_repository import AprobacionRepository
-from app.schemas.aprobacion import AprobacionResponse, DecisionDatos
+from app.api.schemas.aprobacion import AprobacionResponse, DecisionDatos
 
 
 class AprobacionService:

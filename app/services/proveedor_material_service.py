@@ -8,7 +8,7 @@ from app.domain.material import Material
 from app.domain.proveedor import Proveedor
 from app.domain.proveedor_material import ProveedorMaterial
 from app.repositories.proveedor_material_repository import ProveedorMaterialRepository
-from app.schemas.proveedor_material import (
+from app.api.schemas.proveedor_material import (
     OfertaCreate,
     OfertaResponse,
     ProveedorDeMaterialResponse,

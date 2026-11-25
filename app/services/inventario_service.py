@@ -10,7 +10,7 @@ from app.domain.inventario import TIPO_ENTRADA, TIPO_SALIDA, Inventario, Movimie
 from app.domain.orden_compra import OrdenCompra
 from app.domain.proyecto import Proyecto
 from app.repositories.inventario_repository import InventarioRepository
-from app.schemas.inventario import (
+from app.api.schemas.inventario import (
     EntradaCreate,
     EntradaResponse,
     ExistenciaResponse,

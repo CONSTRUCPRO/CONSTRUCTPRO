@@ -11,12 +11,12 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.proveedor_material_repository import ProveedorMaterialRepository
-from app.schemas.proveedor_material import (
+from app.api.schemas.proveedor_material import (
     OfertaCreate,
     OfertaResponse,
     ProveedorDeMaterialResponse,
 )
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Respuesta
 from app.services.proveedor_material_service import ProveedorMaterialService
 
 router = APIRouter(tags=["Relación Material–Proveedor"])

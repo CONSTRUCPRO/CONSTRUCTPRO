@@ -26,7 +26,7 @@ from app.domain.rol import Rol
 from app.domain.usuario import Usuario
 from app.repositories.orden_compra_repository import OrdenCompraRepository
 from app.repositories.pago_repository import PagoRepository
-from app.schemas.pago import AnulacionPago, PagoCreate
+from app.api.schemas.pago import AnulacionPago, PagoCreate
 from app.services.pago_service import PagoService
 
 

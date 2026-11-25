@@ -10,14 +10,14 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.material_repository import MaterialRepository
-from app.schemas.material import (
+from app.api.schemas.material import (
     EstadoUpdate,
     MaterialCreate,
     MaterialResponse,
     MaterialUpdate,
     PrecioUpdate,
 )
-from app.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Respuesta
 from app.services.material_service import MaterialService
 
 router = APIRouter(prefix="/api/v1/materiales", tags=["Materiales"])

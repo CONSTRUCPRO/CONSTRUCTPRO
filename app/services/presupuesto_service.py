@@ -8,7 +8,7 @@ from app.domain.excepciones import ConflictoEstadoError, RecursoNoEncontradoErro
 from app.domain.presupuesto import Presupuesto
 from app.domain.proyecto import Proyecto
 from app.repositories.presupuesto_repository import PresupuestoRepository
-from app.schemas.presupuesto import PresupuestoDatos, PresupuestoResponse
+from app.api.schemas.presupuesto import PresupuestoDatos, PresupuestoResponse
 
 
 def _a_entero(usuario_id: Optional[str]) -> Optional[int]:

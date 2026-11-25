@@ -16,7 +16,7 @@ from app.domain.excepciones import (
 )
 from app.domain.material import Categoria, Material
 from app.repositories.material_repository import MaterialRepository
-from app.schemas.material import EstadoUpdate, MaterialCreate, MaterialUpdate, PrecioUpdate
+from app.api.schemas.material import EstadoUpdate, MaterialCreate, MaterialUpdate, PrecioUpdate
 from app.services.material_service import MaterialService
 
 

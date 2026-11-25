@@ -7,7 +7,7 @@ from typing import Optional
 from app.domain.comparativo import Comparativo
 from app.domain.excepciones import RecursoDuplicadoError, RecursoNoEncontradoError
 from app.repositories.comparativo_repository import ComparativoRepository
-from app.schemas.comparativo import ComparativoCreate, ComparativoResponse, SeleccionDatos
+from app.api.schemas.comparativo import ComparativoCreate, ComparativoResponse, SeleccionDatos
 
 
 class ComparativoService:

@@ -28,13 +28,13 @@ from app.repositories.orden_compra_repository import OrdenCompraRepository
 from app.repositories.pago_repository import PagoRepository
 from app.repositories.proveedor_repository import ProveedorRepository
 from app.repositories.proyecto_repository import ProyectoRepository
-from app.schemas.aprobacion import DecisionDatos
-from app.schemas.cotizacion import CotizacionCreate
-from app.schemas.orden_compra import AnulacionDatos, OrdenCompraCreate
-from app.schemas.pago import AnulacionPago, PagoCreate
-from app.schemas.solicitud import SolicitudUpdate
-from app.schemas.proveedor import EstadoProveedorUpdate
-from app.schemas.proyecto import EstadoProyectoUpdate
+from app.api.schemas.aprobacion import DecisionDatos
+from app.api.schemas.cotizacion import CotizacionCreate
+from app.api.schemas.orden_compra import AnulacionDatos, OrdenCompraCreate
+from app.api.schemas.pago import AnulacionPago, PagoCreate
+from app.api.schemas.solicitud import SolicitudUpdate
+from app.api.schemas.proveedor import EstadoProveedorUpdate
+from app.api.schemas.proyecto import EstadoProyectoUpdate
 from app.services.aprobacion_service import AprobacionService
 from app.services.cotizacion_service import CotizacionService
 from app.services.inventario_service import InventarioService

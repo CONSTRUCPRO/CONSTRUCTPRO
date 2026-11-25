@@ -8,7 +8,7 @@ from app.core.respuestas import construir_paginacion
 from app.domain.excepciones import RecursoDuplicadoError, RecursoNoEncontradoError
 from app.domain.proveedor import Proveedor
 from app.repositories.proveedor_repository import ProveedorRepository
-from app.schemas.proveedor import (
+from app.api.schemas.proveedor import (
     EstadoProveedorUpdate,
     ProveedorCreate,
     ProveedorResponse,

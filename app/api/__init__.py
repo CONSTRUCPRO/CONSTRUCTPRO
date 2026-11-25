@@ -2,6 +2,7 @@
 # REGISTRO AUTOMÁTICO DE ROUTERS. Cada HU tiene su archivo <modulo>_router.py con una variable
 # `router`. En vez de importarlos uno por uno en main.py (y chocar entre los dos cuando cada uno
 # agregaba el suyo), esta función recorre la carpeta y registra todos los que encuentre.
+# La subcarpeta schemas/ también aparece en el recorrido, pero no tiene `router` y se ignora.
 import importlib
 import pkgutil
 

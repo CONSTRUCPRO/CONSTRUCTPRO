@@ -10,8 +10,8 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, obtener_usuario_actual, requiere_rol
 from app.repositories.rol_repository import RolRepository
-from app.schemas.respuesta import Respuesta
-from app.schemas.rol import (EstadoRolUpdate, PermisosRolResponse, PermisosUpdate,
+from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.rol import (EstadoRolUpdate, PermisosRolResponse, PermisosUpdate,
                              RolCreate, RolResponse, RolUpdate)
 from app.services.rol_service import RolService
 
