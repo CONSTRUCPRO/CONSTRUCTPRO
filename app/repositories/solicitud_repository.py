@@ -1,0 +1,86 @@
+# app/repositories/solicitud_repository.py
+# CAPA REPOSITORIO: solo guarda y consulta en la BD. Sin reglas de negocio, sin HTTP.
+from typing import Optional
+
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session, selectinload
+
+from app.domain.comparativo import Comparativo
+from app.domain.cotizacion import ESTADO_APROBADA, Cotizacion, CotizacionDetalle
+from app.domain.material import Material
+from app.domain.proyecto import Proyecto
+from app.domain.solicitud import Solicitud, SolicitudDetalle
+from app.domain.usuario import Usuario
+
+
+class SolicitudRepository:
+    """
+    Acceso a datos de solicitudes: solo consulta y guarda en la BD.
+    No valida reglas de negocio ni sabe de HTTP; eso es del dominio y del servicio.
+    """
+
+    def __init__(self, db: Session):
+        """
+        Recibe la sesión de BD de la petición; todas las consultas de este repositorio la usan.
+        """
+        self.db = db
+
+    # ── Consultas ──────────────────────────────────────────
+
+    def obtener_por_id(self, solicitud_id: int) -> Optional[Solicitud]:
+        """La solicitud con ese id, o None si no existe (db.get busca por llave primaria)."""
+        return self.db.get(Solicitud, solicitud_id)
+
+    def obtener_proyecto(self, proyecto_id: int) -> Optional[Proyecto]:
+        """El proyecto con ese id, o None si no existe (db.get busca por llave primaria)."""
+        return self.db.get(Proyecto, proyecto_id)
+
+    def obtener_usuario(self, usuario_id: int) -> Optional[Usuario]:
+        """El usuario con ese id, o None si no existe (db.get busca por llave primaria)."""
+        return self.db.get(Usuario, usuario_id)
+
+    def obtener_materiales(self, ids: list[int]) -> dict[int, Material]:
+        """Devuelve {id: Material} de los que existan (los que falten no aparecen)."""
+        materiales = self.db.scalars(select(Material).where(Material.id.in_(ids))).all()
+        return {m.id: m for m in materiales}
+
+    def tiene_cotizacion_aprobada(self, solicitud_id: int) -> bool:
+        """
+        Apoya la RN-045: ¿alguna cotización hecha con los comparativos de esta solicitud
+        ya está Aprobada? (solicitud -> comparativos -> cotizacion_detalles -> cotizaciones)
+        """
+        consulta = (
+            select(Cotizacion.id)
+            .join(CotizacionDetalle, CotizacionDetalle.cotizacion_id == Cotizacion.id)
+            .join(Comparativo, Comparativo.id == CotizacionDetalle.comparativo_id)
+            .where(Comparativo.solicitud_id == solicitud_id, Cotizacion.estado == ESTADO_APROBADA)
+            .limit(1)
+        )
+        return self.db.scalar(consulta) is not None
+
+    def listar(self, proyecto_id: Optional[int], estado: Optional[str],
+               pagina: int, por_pagina: int) -> tuple[list[Solicitud], int]:
+        """Devuelve (solicitudes de la página, total de registros que cumplen el filtro)."""
+        consulta = select(Solicitud)
+        if proyecto_id is not None:
+            consulta = consulta.where(Solicitud.proyecto_id == proyecto_id)
+        if estado:
+            consulta = consulta.where(Solicitud.estado == estado.strip().lower())
+
+        total = self.db.scalar(select(func.count()).select_from(consulta.subquery()))
+        items = self.db.scalars(
+            consulta.options(selectinload(Solicitud.detalle).selectinload(SolicitudDetalle.material))
+            .order_by(Solicitud.id.desc())
+            .offset((pagina - 1) * por_pagina)
+            .limit(por_pagina)
+        ).all()
+        return list(items), total
+
+    # ── Escritura ──────────────────────────────────────────
+
+    def guardar(self, solicitud: Solicitud) -> Solicitud:
+        """Sirve para crear y para actualizar: agrega, confirma y recarga desde la BD."""
+        self.db.add(solicitud)
+        self.db.commit()
+        self.db.refresh(solicitud)
+        return solicitud
