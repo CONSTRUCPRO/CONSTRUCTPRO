@@ -14,7 +14,8 @@
   1. Los issues de GitHub de cada historia de usuario (HU): endpoints, JSON esperado,
      casos de prueba y Definición de Hecho.
   2. El documento del parcial "ConstruPro": reglas de negocio RN-001 a RN-140 (Componente E),
-     catálogo de códigos de error (Tabla 57) y sobre JSON estándar (Componente F).
+     catálogo de códigos de error (Tabla 57) y convenciones JSON (Componente F). El **sobre** de la
+     respuesta ya no es el del Componente F: es el del docente, `{message, data, success}` (issue #54).
   3. Las guías del profesor. La guía **setup-entorno** define la estructura del proyecto.
      Las guías del **taller FastAPI** (carpetas en la raíz, datos en memoria) eran un ejercicio
      de aprendizaje y **no** son la estructura del proyecto.
@@ -106,8 +107,12 @@ Reglas de la arquitectura:
   aparecen en cada issue.
 - **Convenciones JSON (Componente F):** campos en snake_case y en español, ids devueltos como
   **texto** con sufijo `_id` (`material_id`, no `id`), fechas ISO 8601 UTC, dinero con 2 decimales
-  más el campo `moneda: "COP"`, campos vacíos como `null` (no se omiten), colecciones siempre como
-  arreglo y paginación en `meta.paginacion`.
+  más el campo `moneda: "COP"`, campos vacíos como `null` (no se omiten) y colecciones siempre como
+  arreglo.
+- **Sobre de respuesta (formato del docente, issue #54):** exactamente `{message, data, success}`, en ese
+  orden. Consulta paginada: `data = {registros: [...], paginacion: {...}}`. Error:
+  `data = {codigo, errores: [{campo, codigo, mensaje, regla}]}`. Las claves del sobre van en inglés; lo que
+  va dentro de `data` sigue en español y snake_case.
 - **Nunca se suben** `.env`, `dev.db`, `venv/` ni `__pycache__/` (ya están en `.gitignore`).
 
 ## 5. Base común (integrada en `development`, PR #18)
@@ -132,12 +137,14 @@ cambia, manda el código del repo.
   de `CATALOGO_MENSAJES` (Tabla 57). `NEG_REGLA_INCUMPLIDA` y `NEG_CONFLICTO_ESTADO` son genéricos,
   agregados para las reglas que no tienen un código propio.
 - `app/core/respuestas.py`: `respuesta_exitosa(datos=None, mensaje="...", paginacion=None)` arma el
-  sobre `{exito, codigo, mensaje, datos, errores, meta{timestamp, version, peticion_id, paginacion}}`.
-  `construir_paginacion(pagina, por_pagina, total_registros)` arma `meta.paginacion`.
+  sobre `{message, data, success}`; si recibe `paginacion`, mete en `data` los `registros` y la `paginacion`.
+  `respuesta_error(codigo, mensaje, errores)` arma el de error. `construir_paginacion(pagina, por_pagina,
+  total_registros)` arma `data.paginacion`.
   `fecha_iso(valor)` formatea fechas: datetime → `"2026-09-14T15:04:32Z"`, date → `"2026-09-14"`, None → None.
 - `app/api/schemas/respuesta.py`: `Respuesta[T]`, el modelo Pydantic genérico del sobre, para Swagger.
-  Se usa así: `@router.post("", response_model=Respuesta[MaterialResponse], status_code=201)` y
-  `response_model=Respuesta[list[MaterialResponse]]`.
+  Se usa así: `@router.post("", response_model=Respuesta[MaterialResponse], status_code=201)` y, en las
+  consultas paginadas, `response_model=Respuesta[Pagina[MaterialResponse]]`. Los ejemplos de error de
+  Swagger de cada router (`_ejemplo_error`) se arman con `respuesta_error()`, así coinciden con la API.
 - `app/core/errores.py`: `registrar_manejadores(app)`, que se llama una vez en `main.py`. Convierte en sobre
   estándar las excepciones de negocio, la validación de Pydantic (422 `VAL_CAMPO_REQUERIDO` o
   `VAL_FORMATO_INVALIDO`, y 400 si el JSON viene mal formado; si un validador lanza
@@ -166,7 +173,7 @@ cambia, manda el código del repo.
 `development`. Si al integrar quedan dos "heads" (`alembic heads` muestra dos), se resuelve con
 `alembic merge heads -m "merge"`. Cada PR incluye su propia migración.
 
-## 6. Estado del proyecto (actualizado el 24-11-2026)
+## 6. Estado del proyecto (actualizado el 25-11-2026)
 
 El código del taller que estaba en la raíz (`api/`, `service/`, `domain/`, `repository/`) **ya se eliminó**
 en el PR de la HU-09. Todo vive en `app/`.
@@ -189,9 +196,12 @@ en el PR de la HU-09. Todo vive en `app/`.
 | HU-21 Generación de Orden de Compra (#13) | Jaime | En `testing` | #43 |
 | HU-23 Registro y Control de Pagos (#14) | Alejandro | En `testing` | #45 |
 | HU-29 Entradas y Salidas de Inventario (#15) | Alejandro | En `testing` | #46 |
-| Revisión general (cierre de orden, RN-045, sobre en `/` y `/health`, 404/405) | Jaime | PR abierto | — |
+| Revisión general (cierre de orden, RN-045, sobre en `/` y `/health`, 404/405) | Jaime | En `testing` | #48 |
+| Comentarios en todo el código | Jaime | En `testing` | #50 |
+| Guías del profesor (`/health`, `.env`, README) y schemas en `app/api/schemas` | Jaime | En `testing` | #51, #52 |
+| Formato de respuesta del docente `{message, data, success}` (#54) | Jaime | En curso | — |
 
-PR de `development` → `testing`: #22, #25, #29, #31, #34, #36, #38, #40 y #42 (uno por cada integración).
+PR de `development` → `testing`: #22, #25, #29, #31, #34, #36, #38, #40, #42, #44, #47, #49 y #53 (uno por cada integración).
 
 **Migraciones (un solo head):** `a3f1c9e2b7d4` HU-03 → `246dbe7806b2` HU-09 → `c6694196e06d` HU-10 →
 `173f32cdf2cd` HU-01 → `9dcb06782bba` HU-11 → `e4a0a96d3d9a` permisos Coordinador → `02a74136ff30` HU-05 →
@@ -222,11 +232,9 @@ PR de `development` → `testing`: #22, #25, #29, #31, #34, #36, #38, #40 y #42 
    revisión general la orden se cierra sola (RN-087), así que ya no queda abierta para siempre.
 2. Permisos del Coordinador: resuelto (PR #27 y #33). Materiales, proveedores y ofertas usan
    `requiere_permiso("Materiales", ...)`.
-3. Formato del sobre: el Componente F del parcial y todos los issues usan `exito`, `codigo`, `mensaje`,
-   `datos`, `errores` y `meta`. Alejandro recuerda que el profesor pidió `success`/`message`/`data`.
-   **No se cambia nada hasta tener la plantilla exacta del profesor.** Si cambia, se hace solo en la base
-   común (`app/core/respuestas.py`, `app/api/schemas/respuesta.py`, `app/core/errores.py`) y en los
-   ejemplos de error de Swagger de los routers.
+3. Formato del sobre: resuelto en el issue #54. El profesor confirmó su plantilla `{message, data, success}`
+   y se cambió solo en la base común (`app/core/respuestas.py`, `app/api/schemas/respuesta.py`,
+   `app/core/errores.py`). Punto de retorno: tag `antes-de-formato-profesor`.
 4. Las 15 HU están terminadas y en `testing`. Falta: pruebas funcionales con capturas y la
    documentación final. Ciclo completo de una compra: solicitud → comparativo → cotización → enviar →
    aprobar → orden → `/confirmar` → pago(s) y `/recepcion` (en cualquier orden) → entrada al inventario.
@@ -479,7 +487,7 @@ from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, obtener_usuario_actual, requiere_rol
 from app.repositories.herramienta_repository import HerramientaRepository
 from app.api.schemas.herramienta import HerramientaCreate, HerramientaResponse, PrecioUpdate
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.services.herramienta_service import HerramientaService
 
 router = APIRouter(prefix="/api/v1/herramientas", tags=["Herramientas"])
@@ -498,7 +506,7 @@ def crear(datos: HerramientaCreate,
     return respuesta_exitosa(servicio.crear(datos), "Herramienta registrada correctamente.")
 
 
-@router.get("", response_model=Respuesta[list[HerramientaResponse]],
+@router.get("", response_model=Respuesta[Pagina[HerramientaResponse]],
             summary="Consultar herramientas (paginado)")
 def listar(estado: Optional[str] = None,
            nombre: Optional[str] = None,
