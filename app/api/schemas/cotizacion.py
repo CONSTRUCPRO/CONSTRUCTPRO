@@ -1,6 +1,6 @@
 # app/api/schemas/cotizacion.py
 # Esquemas Pydantic: validan la FORMA de la entrada y definen la forma de la SALIDA
-# (lo que va dentro de "datos" en el sobre estándar).
+# (lo que va dentro de "data" en el sobre estándar).
 # Las reglas RN-061 a RN-065 NO van aquí: van en el dominio, para que el error llegue con su regla.
 from typing import Optional
 

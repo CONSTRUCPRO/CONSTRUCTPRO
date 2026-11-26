@@ -1,7 +1,8 @@
 """
 Manejo global de errores de ConstruPro.
 
-Convierte CUALQUIER error en el sobre JSON estándar:
+Convierte CUALQUIER error en el sobre JSON estándar {message, data, success}, con success = false
+y en data el código del catálogo (data.codigo) y el detalle (data.errores):
 - Excepciones de negocio (ConstruProError y sus hijas) -> su código HTTP y del catálogo.
 - Errores de validación de Pydantic                   -> 422 VAL_CAMPO_REQUERIDO / VAL_FORMATO_INVALIDO
                                                           (400 si el JSON está mal formado).
@@ -47,8 +48,8 @@ def registrar_manejadores(app: FastAPI) -> None:
         """
         Middleware: a cada petición le da un identificador único (peticion_id).
 
-        Ese id viaja en meta.peticion_id de la respuesta y en el encabezado X-Peticion-Id; si algo
-        falla, el mismo id aparece en el log junto al detalle técnico, así se encuentra el error.
+        Ese id viaja en el encabezado X-Peticion-Id de la respuesta; si algo falla, el mismo id
+        aparece en el log junto al detalle técnico, así se encuentra el error.
         """
         peticion_id = str(uuid.uuid4())
         peticion_id_actual.set(peticion_id)
@@ -62,7 +63,7 @@ def registrar_manejadores(app: FastAPI) -> None:
         Errores de negocio (ConstruProError y sus hijas, lanzadas por el dominio y los servicios).
 
         Cada excepción ya trae su código HTTP, el código del catálogo, el mensaje, el campo y la
-        regla; aquí solo se empacan en el sobre estándar con un elemento en `errores`.
+        regla; aquí solo se empacan en el sobre estándar con un elemento en `data.errores`.
         """
         error = {"campo": exc.campo, "codigo": exc.codigo,
                  "mensaje": exc.mensaje, "regla": exc.regla}
@@ -76,7 +77,7 @@ def registrar_manejadores(app: FastAPI) -> None:
         """
         Errores de validación de Pydantic (datos de entrada que no cumplen el schema).
 
-        Arma un elemento en `errores` por cada campo con problema: VAL_CAMPO_REQUERIDO si falta,
+        Arma un elemento en `data.errores` por cada campo con problema: VAL_CAMPO_REQUERIDO si falta,
         VAL_FORMATO_INVALIDO si viene mal. Si el JSON ni siquiera se puede leer, responde 400.
         """
         errores = []

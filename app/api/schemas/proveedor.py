@@ -1,6 +1,6 @@
 # app/api/schemas/proveedor.py
 # Esquemas Pydantic: validan la FORMA de la entrada y definen la forma de la SALIDA
-# (lo que va dentro de "datos" en el sobre estándar).
+# (lo que va dentro de "data" en el sobre estándar).
 # El formato de NIT, teléfono y correo se valida aquí: si falla, la base común
 # responde 422 VAL_FORMATO_INVALIDO con el mensaje en español del ValueError.
 import re
