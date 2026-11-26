@@ -9,7 +9,7 @@ from fastapi import APIRouter, Body, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.respuestas import respuesta_exitosa
+from app.core.respuestas import respuesta_error, respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.orden_compra_repository import OrdenCompraRepository
 from app.api.schemas.orden_compra import AnulacionDatos, OrdenCompraCreate, OrdenCompraResponse
@@ -33,20 +33,15 @@ def obtener_servicio(db: Session = Depends(get_db)) -> OrdenCompraService:
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str] = None) -> dict:
     """
-    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
-    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    Arma un ejemplo de respuesta de error para la documentación de Swagger (parámetro
+    `responses=` de cada endpoint). Usa respuesta_error(), la misma función que arma los
+    errores reales, así el ejemplo siempre coincide con lo que responde la API.
     """
     return {
         "description": descripcion,
-        "content": {"application/json": {"example": {
-            "exito": False,
-            "codigo": codigo,
-            "mensaje": mensaje_general,
-            "datos": None,
-            "errores": [{"campo": campo, "codigo": codigo, "mensaje": mensaje, "regla": regla}],
-            "meta": {"timestamp": "2026-10-21T15:04:32Z", "version": "v1",
-                     "peticion_id": "9f3c1a7e-52b1-4c0d-9a77-1b2e6d4f8a10", "paginacion": None},
-        }}},
+        "content": {"application/json": {"example": respuesta_error(
+            codigo, mensaje_general,
+            [{"campo": campo, "codigo": codigo, "mensaje": mensaje, "regla": regla}])}},
     }
 
 
