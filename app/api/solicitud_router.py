@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, obtener_usuario_actual, requiere_permiso
 from app.repositories.solicitud_repository import SolicitudRepository
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.api.schemas.solicitud import SolicitudCreate, SolicitudResponse, SolicitudUpdate
 from app.services.solicitud_service import SolicitudService
 
@@ -102,11 +102,11 @@ def crear_solicitud(datos: SolicitudCreate,
                              "Solicitud creada correctamente.")
 
 
-@router.get("", response_model=Respuesta[list[SolicitudResponse]],
+@router.get("", response_model=Respuesta[Pagina[SolicitudResponse]],
             summary="Consultar solicitudes",
             description="Consulta paginada de solicitudes, de la más reciente a la más antigua. "
                         "Filtros opcionales por proyecto y estado. La paginación va en "
-                        "`meta.paginacion`.",
+                        "`data.paginacion`.",
             responses={401: ERROR_401, 403: ERROR_403_PERMISO})
 def listar_solicitudes(
         proyecto_id: Optional[int] = Query(None, description="Id del proyecto"),

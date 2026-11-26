@@ -20,7 +20,7 @@ from app.api.schemas.proyecto import (
     ResponsableUpdate,
     UbicacionDatos,
 )
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.services.proyecto_service import ProyectoService
 
 router = APIRouter(prefix="/api/v1/proyectos", tags=["Proyectos"])
@@ -109,10 +109,10 @@ def crear_proyecto(datos: ProyectoCreate,
     return respuesta_exitosa(servicio.crear(datos), "Proyecto registrado correctamente.")
 
 
-@router.get("", response_model=Respuesta[list[ProyectoResponse]],
+@router.get("", response_model=Respuesta[Pagina[ProyectoResponse]],
             summary="Consultar proyectos",
             description="Consulta paginada de proyectos (FUN-017), con filtros opcionales por "
-                        "estado, ciudad, cliente o responsable. La paginación va en `meta.paginacion`.",
+                        "estado, ciudad, cliente o responsable. La paginación va en `data.paginacion`.",
             responses={401: ERROR_401, 403: ERROR_403})
 def listar_proyectos(
         estado: Optional[str] = Query(None, description="activo | suspendido | finalizado"),

@@ -17,7 +17,7 @@ from app.api.schemas.material import (
     MaterialUpdate,
     PrecioUpdate,
 )
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.services.material_service import MaterialService
 
 router = APIRouter(prefix="/api/v1/materiales", tags=["Materiales"])
@@ -99,10 +99,10 @@ def crear_material(datos: MaterialCreate,
     return respuesta_exitosa(servicio.crear(datos), "Material registrado correctamente.")
 
 
-@router.get("", response_model=Respuesta[list[MaterialResponse]],
+@router.get("", response_model=Respuesta[Pagina[MaterialResponse]],
             summary="Consultar catálogo de materiales",
             description="Consulta paginada del catálogo. Filtros opcionales por categoría, "
-                        "parte del nombre y estado. La paginación va en `meta.paginacion`.",
+                        "parte del nombre y estado. La paginación va en `data.paginacion`.",
             responses={401: ERROR_401, 403: ERROR_403})
 def listar_materiales(
         categoria_id: Optional[int] = Query(None, description="Id de la categoría"),

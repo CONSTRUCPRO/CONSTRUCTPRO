@@ -16,7 +16,7 @@ from app.api.schemas.proveedor_material import (
     OfertaResponse,
     ProveedorDeMaterialResponse,
 )
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.services.proveedor_material_service import ProveedorMaterialService
 
 router = APIRouter(tags=["Relación Material–Proveedor"])
@@ -109,11 +109,11 @@ def asociar_material(proveedor_id: int, datos: OfertaCreate, response: Response,
 
 
 @router.get("/api/v1/materiales/{material_id}/proveedores",
-            response_model=Respuesta[list[ProveedorDeMaterialResponse]],
+            response_model=Respuesta[Pagina[ProveedorDeMaterialResponse]],
             summary="Consultar proveedores de un material",
             description="Devuelve los proveedores **activos** que ofrecen el material, con su "
                         "precio, disponibilidad y días de entrega. Es la base del comparativo "
-                        "de precios (HU-16). La paginación va en `meta.paginacion`.",
+                        "de precios (HU-16). La paginación va en `data.paginacion`.",
             responses={401: ERROR_401, 403: ERROR_403, 404: ERROR_404_MATERIAL})
 def proveedores_de_material(
         material_id: int,

@@ -14,7 +14,7 @@ from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.aprobacion_repository import AprobacionRepository
 from app.api.schemas.aprobacion import AprobacionResponse, DecisionDatos
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.services.aprobacion_service import AprobacionService
 
 router = APIRouter(prefix="/api/v1/aprobaciones", tags=["Aprobaciones"])
@@ -76,7 +76,7 @@ ERROR_422 = _ejemplo_error(
 
 # ── Endpoints ────────────────────────────────────────────────
 
-@router.get("", response_model=Respuesta[list[AprobacionResponse]],
+@router.get("", response_model=Respuesta[Pagina[AprobacionResponse]],
             summary="Consultar compras en revisión",
             description="Lista paginada de aprobaciones por estado. Si no se envía `estado`, devuelve "
                         "las que esperan decisión (**En revisión**), de la más antigua a la más reciente. "
@@ -94,7 +94,7 @@ def listar_aprobaciones(
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
 
 
-@router.get("/historico", response_model=Respuesta[list[AprobacionResponse]],
+@router.get("/historico", response_model=Respuesta[Pagina[AprobacionResponse]],
             summary="Histórico de aprobaciones",
             description="Aprobaciones ya decididas (Aprobada o Rechazada) con aprobador, fecha, monto "
                         "autorizado y motivo (FUN-079), de la más reciente a la más antigua. Filtros "

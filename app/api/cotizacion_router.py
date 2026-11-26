@@ -11,7 +11,7 @@ from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.cotizacion_repository import CotizacionRepository
 from app.api.schemas.cotizacion import CotizacionCreate, CotizacionResponse
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.services.cotizacion_service import CotizacionService
 
 router = APIRouter(prefix="/api/v1/cotizaciones", tags=["Cotizaciones"])
@@ -105,10 +105,10 @@ def generar_cotizacion(datos: CotizacionCreate,
     return respuesta_exitosa(servicio.generar(datos), "Cotización generada correctamente.")
 
 
-@router.get("", response_model=Respuesta[list[CotizacionResponse]],
+@router.get("", response_model=Respuesta[Pagina[CotizacionResponse]],
             summary="Consultar cotizaciones",
             description="Consulta paginada, de la más reciente a la más antigua. Filtros opcionales "
-                        "por proyecto y estado. La paginación va en `meta.paginacion`.",
+                        "por proyecto y estado. La paginación va en `data.paginacion`.",
             responses={401: ERROR_401, 403: ERROR_403})
 def listar_cotizaciones(
         proyecto_id: Optional[int] = Query(None, description="Id del proyecto"),

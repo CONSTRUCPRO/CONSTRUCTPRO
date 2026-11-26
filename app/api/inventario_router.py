@@ -20,7 +20,7 @@ from app.api.schemas.inventario import (
     RecepcionResponse,
     SalidaCreate,
 )
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.services.inventario_service import InventarioService
 
 router = APIRouter(tags=["Inventario"])
@@ -137,7 +137,7 @@ def registrar_salida(datos: SalidaCreate,
                              "Salida registrada correctamente.")
 
 
-@router.get("/api/v1/inventario", response_model=Respuesta[list[ExistenciaResponse]],
+@router.get("/api/v1/inventario", response_model=Respuesta[Pagina[ExistenciaResponse]],
             summary="Consultar existencias del proyecto",
             description="Existencia actual de cada material en el proyecto, paginada. Si el proyecto "
                         "todavía no tiene inventario, devuelve una lista vacía.",
@@ -152,7 +152,7 @@ def existencias(proyecto_id: int = Query(..., description="Id del proyecto"),
     return respuesta_exitosa(items, "Consulta realizada correctamente.", paginacion)
 
 
-@router.get("/api/v1/inventario/movimientos", response_model=Respuesta[list[MovimientoResponse]],
+@router.get("/api/v1/inventario/movimientos", response_model=Respuesta[Pagina[MovimientoResponse]],
             summary="Consultar movimientos (trazabilidad)",
             description="Entradas y salidas del proyecto, de la más reciente a la más antigua. "
                         "Filtros opcionales por material y tipo.",

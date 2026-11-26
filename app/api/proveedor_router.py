@@ -16,7 +16,7 @@ from app.api.schemas.proveedor import (
     ProveedorResponse,
     ProveedorUpdate,
 )
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.services.proveedor_service import ProveedorService
 
 router = APIRouter(prefix="/api/v1/proveedores", tags=["Proveedores"])
@@ -97,10 +97,10 @@ def crear_proveedor(datos: ProveedorCreate,
     return respuesta_exitosa(servicio.crear(datos), "Proveedor registrado correctamente.")
 
 
-@router.get("", response_model=Respuesta[list[ProveedorResponse]],
+@router.get("", response_model=Respuesta[Pagina[ProveedorResponse]],
             summary="Consultar proveedores",
             description="Consulta paginada de proveedores. Filtros opcionales por estado y "
-                        "parte de la razón social. La paginación va en `meta.paginacion`.",
+                        "parte de la razón social. La paginación va en `data.paginacion`.",
             responses={401: ERROR_401, 403: ERROR_403})
 def listar_proveedores(
         estado: Optional[str] = Query(None, description="activo | inactivo"),

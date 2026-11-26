@@ -1,8 +1,14 @@
 """
-Sobre de respuesta estándar de ConstruPro (Componente F del parcial).
+Sobre de respuesta estándar de ConstruPro (formato indicado por el docente, issue #54).
 
-Toda respuesta de la API tiene esta forma:
-    {exito, codigo, mensaje, datos, errores, meta{timestamp, version, peticion_id, paginacion}}
+Toda respuesta de la API tiene exactamente tres claves, en este orden:
+    {"message": ..., "data": ..., "success": true | false}
+
+- Éxito:              data = el registro (o la lista, si no se pagina).
+- Consulta paginada:  data = {"registros": [...], "paginacion": {...}}
+- Error:              data = {"codigo": "REC_DUPLICADO", "errores": [{campo, codigo, mensaje, regla}]}
+
+Los campos que van DENTRO de data siguen en español y en snake_case (material_id, fecha_registro...).
 
 Uso en un router:
     return respuesta_exitosa(datos=rol, mensaje="Rol creado correctamente.")
@@ -13,10 +19,8 @@ from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-VERSION_API = "v1"
-
-# Identificador de la petición en curso. Lo asigna el middleware de app/core/errores.py
-# y sirve para buscar en el log el detalle de un error.
+# Identificador de la petición en curso. Lo asigna el middleware de app/core/errores.py, viaja en
+# el encabezado X-Peticion-Id y sirve para buscar en el log el detalle de un error.
 peticion_id_actual: ContextVar[Optional[str]] = ContextVar("peticion_id_actual", default=None)
 
 
@@ -29,48 +33,45 @@ def obtener_peticion_id() -> str:
     return peticion_id
 
 
-def construir_meta(paginacion: Optional[dict] = None) -> dict:
-    """
-    Bloque `meta` que acompaña toda respuesta: hora UTC, versión de la API, id de la petición
-    (para rastrearla en el log) y la paginación cuando la respuesta es una lista.
-    """
-    return {
-        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "version": VERSION_API,
-        "peticion_id": obtener_peticion_id(),
-        "paginacion": paginacion,
-    }
-
-
 def respuesta_exitosa(datos: Any = None,
                       mensaje: str = "Operación realizada correctamente.",
                       paginacion: Optional[dict] = None) -> dict:
-    """Sobre para respuestas exitosas (200 / 201)."""
+    """
+    Sobre para respuestas exitosas (200 / 201).
+
+    Si llega `paginacion` (consultas que devuelven una página de resultados), la lista y la
+    paginación se empacan juntas dentro de data: {"registros": [...], "paginacion": {...}}.
+    """
+    if paginacion is not None:
+        datos = {"registros": datos, "paginacion": paginacion}
     return {
-        "exito": True,
-        "codigo": "OK",
-        "mensaje": mensaje,
-        "datos": datos,
-        "errores": [],
-        "meta": construir_meta(paginacion),
+        "message": mensaje,
+        "data": datos,
+        "success": True,
     }
 
 
 def respuesta_error(codigo: str, mensaje: str,
                     errores: Optional[list[dict]] = None) -> dict:
-    """Sobre para respuestas con error. Lo usan los manejadores de app/core/errores.py."""
+    """
+    Sobre para respuestas con error. Lo usan los manejadores de app/core/errores.py y los
+    ejemplos de error de Swagger de cada router.
+
+    `mensaje` es el mensaje general del catálogo (Tabla 57); el detalle de cada problema va en
+    data.errores (siempre es un arreglo, aunque esté vacío).
+    """
     return {
-        "exito": False,
-        "codigo": codigo,
-        "mensaje": mensaje,
-        "datos": None,
-        "errores": errores or [],
-        "meta": construir_meta(),
+        "message": mensaje,
+        "data": {
+            "codigo": codigo,
+            "errores": errores or [],
+        },
+        "success": False,
     }
 
 
 def construir_paginacion(pagina: int, por_pagina: int, total_registros: int) -> dict:
-    """Objeto meta.paginacion para las consultas que devuelven listas."""
+    """Objeto data.paginacion para las consultas que devuelven listas."""
     return {
         "pagina": pagina,
         "por_pagina": por_pagina,

@@ -12,7 +12,7 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.usuario_repository import UsuarioRepository
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.api.schemas.usuario import (
     EstadoUsuarioUpdate,
     RolUsuarioUpdate,
@@ -117,10 +117,10 @@ def crear_usuario(datos: UsuarioCreate,
     return respuesta_exitosa(servicio.crear(datos), "Usuario registrado correctamente.")
 
 
-@router.get("", response_model=Respuesta[list[UsuarioResponse]],
+@router.get("", response_model=Respuesta[Pagina[UsuarioResponse]],
             summary="Consultar usuarios",
             description="Consulta paginada de usuarios, con filtros opcionales. Nunca incluye "
-                        "la contraseña (RN-003). La paginación va en `meta.paginacion`.",
+                        "la contraseña (RN-003). La paginación va en `data.paginacion`.",
             responses={401: ERROR_401, 403: ERROR_403})
 def listar_usuarios(
         estado: Optional[str] = Query(None, description="activo | inactivo"),
