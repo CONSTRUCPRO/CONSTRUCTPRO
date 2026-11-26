@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.core.respuestas import respuesta_exitosa
 from app.core.seguridad import UsuarioActual, obtener_usuario_actual, requiere_rol
 from app.repositories.rol_repository import RolRepository
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.api.schemas.rol import (EstadoRolUpdate, PermisosRolResponse, PermisosUpdate,
                              RolCreate, RolResponse, RolUpdate)
 from app.services.rol_service import RolService
@@ -38,7 +38,7 @@ def crear_rol(datos: RolCreate,
     return respuesta_exitosa(servicio.crear(datos), "Rol creado correctamente.")
 
 
-@router.get("", response_model=Respuesta[list[RolResponse]], summary="Consultar roles")
+@router.get("", response_model=Respuesta[Pagina[RolResponse]], summary="Consultar roles")
 def listar_roles(estado: Optional[Literal["activo", "inactivo"]] = None,
                  pagina: int = Query(1, ge=1),
                  por_pagina: int = Query(10, ge=1, le=100),

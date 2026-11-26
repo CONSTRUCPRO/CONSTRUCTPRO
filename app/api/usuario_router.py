@@ -9,10 +9,10 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.respuestas import respuesta_exitosa
+from app.core.respuestas import respuesta_error, respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.usuario_repository import UsuarioRepository
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.api.schemas.usuario import (
     EstadoUsuarioUpdate,
     RolUsuarioUpdate,
@@ -38,20 +38,14 @@ def obtener_servicio(db: Session = Depends(get_db)) -> UsuarioService:
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    errores: list[dict]) -> dict:
     """
-    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
-    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    Arma un ejemplo de respuesta de error para la documentación de Swagger (parámetro
+    `responses=` de cada endpoint). Usa respuesta_error(), la misma función que arma los
+    errores reales, así el ejemplo siempre coincide con lo que responde la API.
     """
     return {
         "description": descripcion,
-        "content": {"application/json": {"example": {
-            "exito": False,
-            "codigo": codigo,
-            "mensaje": mensaje_general,
-            "datos": None,
-            "errores": errores,
-            "meta": {"timestamp": "2026-10-21T15:04:32Z", "version": "v1",
-                     "peticion_id": "9f3c1a7e-52b1-4c0d-9a77-1b2e6d4f8a10", "paginacion": None},
-        }}},
+        "content": {"application/json": {"example": respuesta_error(
+            codigo, mensaje_general, errores)}},
     }
 
 
@@ -117,10 +111,10 @@ def crear_usuario(datos: UsuarioCreate,
     return respuesta_exitosa(servicio.crear(datos), "Usuario registrado correctamente.")
 
 
-@router.get("", response_model=Respuesta[list[UsuarioResponse]],
+@router.get("", response_model=Respuesta[Pagina[UsuarioResponse]],
             summary="Consultar usuarios",
             description="Consulta paginada de usuarios, con filtros opcionales. Nunca incluye "
-                        "la contraseña (RN-003). La paginación va en `meta.paginacion`.",
+                        "la contraseña (RN-003). La paginación va en `data.paginacion`.",
             responses={401: ERROR_401, 403: ERROR_403})
 def listar_usuarios(
         estado: Optional[str] = Query(None, description="activo | inactivo"),

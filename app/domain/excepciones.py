@@ -38,7 +38,7 @@ class ConstruProError(Exception):
     """
     Base de todos los errores de negocio de ConstruPro.
 
-    - mensaje:         detalle del error (va en errores[0].mensaje).
+    - mensaje:         detalle del error (va en data.errores[0].mensaje).
     - regla:           regla de negocio infringida, ej. "RN-031" (puede ser None).
     - campo:           campo relacionado con el error, ej. "correo" (puede ser None).
     - codigo:          código del catálogo; si no se envía, se usa el de la clase.

@@ -1,6 +1,6 @@
 # app/api/schemas/solicitud.py
 # Esquemas Pydantic: validan la FORMA de la entrada y definen la forma de la SALIDA
-# (lo que va dentro de "datos" en el sobre estándar).
+# (lo que va dentro de "data" en el sobre estándar).
 # RN-042 (cantidad > 0 y al menos una línea) y RN-043 (material repetido) NO van aquí:
 # van en el dominio, para que el error llegue con su número de regla.
 from typing import Optional

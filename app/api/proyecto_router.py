@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.respuestas import respuesta_exitosa
+from app.core.respuestas import respuesta_error, respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.proyecto_repository import ProyectoRepository
 from app.api.schemas.proyecto import (
@@ -20,7 +20,7 @@ from app.api.schemas.proyecto import (
     ResponsableUpdate,
     UbicacionDatos,
 )
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.services.proyecto_service import ProyectoService
 
 router = APIRouter(prefix="/api/v1/proyectos", tags=["Proyectos"])
@@ -39,20 +39,15 @@ def obtener_servicio(db: Session = Depends(get_db)) -> ProyectoService:
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str] = None) -> dict:
     """
-    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
-    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    Arma un ejemplo de respuesta de error para la documentación de Swagger (parámetro
+    `responses=` de cada endpoint). Usa respuesta_error(), la misma función que arma los
+    errores reales, así el ejemplo siempre coincide con lo que responde la API.
     """
     return {
         "description": descripcion,
-        "content": {"application/json": {"example": {
-            "exito": False,
-            "codigo": codigo,
-            "mensaje": mensaje_general,
-            "datos": None,
-            "errores": [{"campo": campo, "codigo": codigo, "mensaje": mensaje, "regla": regla}],
-            "meta": {"timestamp": "2026-10-21T15:04:32Z", "version": "v1",
-                     "peticion_id": "9f3c1a7e-52b1-4c0d-9a77-1b2e6d4f8a10", "paginacion": None},
-        }}},
+        "content": {"application/json": {"example": respuesta_error(
+            codigo, mensaje_general,
+            [{"campo": campo, "codigo": codigo, "mensaje": mensaje, "regla": regla}])}},
     }
 
 
@@ -109,10 +104,10 @@ def crear_proyecto(datos: ProyectoCreate,
     return respuesta_exitosa(servicio.crear(datos), "Proyecto registrado correctamente.")
 
 
-@router.get("", response_model=Respuesta[list[ProyectoResponse]],
+@router.get("", response_model=Respuesta[Pagina[ProyectoResponse]],
             summary="Consultar proyectos",
             description="Consulta paginada de proyectos (FUN-017), con filtros opcionales por "
-                        "estado, ciudad, cliente o responsable. La paginación va en `meta.paginacion`.",
+                        "estado, ciudad, cliente o responsable. La paginación va en `data.paginacion`.",
             responses={401: ERROR_401, 403: ERROR_403})
 def listar_proyectos(
         estado: Optional[str] = Query(None, description="activo | suspendido | finalizado"),

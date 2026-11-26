@@ -1,10 +1,10 @@
 """
-Modelos Pydantic del sobre estándar, para que Swagger (/docs) muestre
-la forma real de las respuestas.
+Modelos Pydantic del sobre estándar (success, message, data), para que Swagger (/docs)
+muestre la forma real de las respuestas.
 
 Uso en un router:
     @router.post("", response_model=Respuesta[RolResponse], status_code=201)
-    @router.get("", response_model=Respuesta[list[RolResponse]])
+    @router.get("", response_model=Respuesta[Pagina[RolResponse]])     # consulta paginada
 """
 from typing import Generic, Optional, TypeVar
 
@@ -14,7 +14,7 @@ T = TypeVar("T")
 
 
 class Paginacion(BaseModel):
-    """Datos de paginación que van en meta.paginacion cuando la respuesta es una lista."""
+    """Datos de paginación que van en data.paginacion cuando la respuesta es una lista."""
 
     pagina: int
     por_pagina: int
@@ -22,36 +22,27 @@ class Paginacion(BaseModel):
     total_paginas: int
 
 
-class Meta(BaseModel):
-    """Metadatos de toda respuesta: hora, versión, id de la petición y paginación."""
+class Pagina(BaseModel, Generic[T]):
+    """
+    Lo que va en `data` en una consulta paginada: los registros de la página pedida y los datos
+    para pedir las demás páginas.
+    """
 
-    timestamp: str
-    version: str
-    peticion_id: str
-    paginacion: Optional[Paginacion] = None
-
-
-class ErrorDetalle(BaseModel):
-    """Un problema concreto: en qué campo, con qué código, qué pasó y qué regla se incumplió."""
-
-    campo: Optional[str] = None
-    codigo: str
-    mensaje: str
-    regla: Optional[str] = None
+    registros: list[T]
+    paginacion: Paginacion
 
 
 class Respuesta(BaseModel, Generic[T]):
     """
-    El sobre estándar del Componente F, genérico en T (el tipo de `datos`).
+    El sobre estándar, genérico en T (el tipo de `data`).
 
     Respuesta[UsuarioResponse] le dice a Swagger cómo luce una respuesta con un usuario, y
-    Respuesta[list[UsuarioResponse]] una con una lista. Solo documenta: el JSON real lo arma
-    respuesta_exitosa() o los manejadores de errores.
+    Respuesta[Pagina[UsuarioResponse]] una con una página de usuarios. Solo documenta: el JSON
+    real lo arma respuesta_exitosa() o los manejadores de errores (app/core/respuestas.py).
+
+    El orden de los campos es el del ejemplo del docente: message, data, success.
     """
 
-    exito: bool
-    codigo: str
-    mensaje: str
-    datos: Optional[T] = None
-    errores: list[ErrorDetalle] = []
-    meta: Meta
+    message: str
+    data: Optional[T] = None
+    success: bool

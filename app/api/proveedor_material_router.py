@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.respuestas import respuesta_exitosa
+from app.core.respuestas import respuesta_error, respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.proveedor_material_repository import ProveedorMaterialRepository
 from app.api.schemas.proveedor_material import (
@@ -16,7 +16,7 @@ from app.api.schemas.proveedor_material import (
     OfertaResponse,
     ProveedorDeMaterialResponse,
 )
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.services.proveedor_material_service import ProveedorMaterialService
 
 router = APIRouter(tags=["Relación Material–Proveedor"])
@@ -39,20 +39,15 @@ def obtener_servicio(db: Session = Depends(get_db)) -> ProveedorMaterialService:
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str]) -> dict:
     """
-    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
-    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    Arma un ejemplo de respuesta de error para la documentación de Swagger (parámetro
+    `responses=` de cada endpoint). Usa respuesta_error(), la misma función que arma los
+    errores reales, así el ejemplo siempre coincide con lo que responde la API.
     """
     return {
         "description": descripcion,
-        "content": {"application/json": {"example": {
-            "exito": False,
-            "codigo": codigo,
-            "mensaje": mensaje_general,
-            "datos": None,
-            "errores": [{"campo": campo, "codigo": codigo, "mensaje": mensaje, "regla": regla}],
-            "meta": {"timestamp": "2026-10-21T15:04:32Z", "version": "v1",
-                     "peticion_id": "9f3c1a7e-52b1-4c0d-9a77-1b2e6d4f8a10", "paginacion": None},
-        }}},
+        "content": {"application/json": {"example": respuesta_error(
+            codigo, mensaje_general,
+            [{"campo": campo, "codigo": codigo, "mensaje": mensaje, "regla": regla}])}},
     }
 
 
@@ -109,11 +104,11 @@ def asociar_material(proveedor_id: int, datos: OfertaCreate, response: Response,
 
 
 @router.get("/api/v1/materiales/{material_id}/proveedores",
-            response_model=Respuesta[list[ProveedorDeMaterialResponse]],
+            response_model=Respuesta[Pagina[ProveedorDeMaterialResponse]],
             summary="Consultar proveedores de un material",
             description="Devuelve los proveedores **activos** que ofrecen el material, con su "
                         "precio, disponibilidad y días de entrega. Es la base del comparativo "
-                        "de precios (HU-16). La paginación va en `meta.paginacion`.",
+                        "de precios (HU-16). La paginación va en `data.paginacion`.",
             responses={401: ERROR_401, 403: ERROR_403, 404: ERROR_404_MATERIAL})
 def proveedores_de_material(
         material_id: int,
