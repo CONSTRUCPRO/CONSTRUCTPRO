@@ -7,11 +7,11 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.respuestas import respuesta_exitosa
+from app.core.respuestas import respuesta_error, respuesta_exitosa
 from app.core.seguridad import UsuarioActual, requiere_permiso
 from app.repositories.cotizacion_repository import CotizacionRepository
 from app.api.schemas.cotizacion import CotizacionCreate, CotizacionResponse
-from app.api.schemas.respuesta import Respuesta
+from app.api.schemas.respuesta import Pagina, Respuesta
 from app.services.cotizacion_service import CotizacionService
 
 router = APIRouter(prefix="/api/v1/cotizaciones", tags=["Cotizaciones"])
@@ -34,20 +34,15 @@ def obtener_servicio(db: Session = Depends(get_db)) -> CotizacionService:
 def _ejemplo_error(descripcion: str, codigo: str, mensaje_general: str,
                    campo: Optional[str], mensaje: str, regla: Optional[str]) -> dict:
     """
-    Arma un ejemplo de respuesta de error con el sobre estándar, solo para la documentación de
-    Swagger (parámetro `responses=` de cada endpoint). No se usa al responder de verdad.
+    Arma un ejemplo de respuesta de error para la documentación de Swagger (parámetro
+    `responses=` de cada endpoint). Usa respuesta_error(), la misma función que arma los
+    errores reales, así el ejemplo siempre coincide con lo que responde la API.
     """
     return {
         "description": descripcion,
-        "content": {"application/json": {"example": {
-            "exito": False,
-            "codigo": codigo,
-            "mensaje": mensaje_general,
-            "datos": None,
-            "errores": [{"campo": campo, "codigo": codigo, "mensaje": mensaje, "regla": regla}],
-            "meta": {"timestamp": "2026-10-21T15:04:32Z", "version": "v1",
-                     "peticion_id": "9f3c1a7e-52b1-4c0d-9a77-1b2e6d4f8a10", "paginacion": None},
-        }}},
+        "content": {"application/json": {"example": respuesta_error(
+            codigo, mensaje_general,
+            [{"campo": campo, "codigo": codigo, "mensaje": mensaje, "regla": regla}])}},
     }
 
 
@@ -105,10 +100,10 @@ def generar_cotizacion(datos: CotizacionCreate,
     return respuesta_exitosa(servicio.generar(datos), "Cotización generada correctamente.")
 
 
-@router.get("", response_model=Respuesta[list[CotizacionResponse]],
+@router.get("", response_model=Respuesta[Pagina[CotizacionResponse]],
             summary="Consultar cotizaciones",
             description="Consulta paginada, de la más reciente a la más antigua. Filtros opcionales "
-                        "por proyecto y estado. La paginación va en `meta.paginacion`.",
+                        "por proyecto y estado. La paginación va en `data.paginacion`.",
             responses={401: ERROR_401, 403: ERROR_403})
 def listar_cotizaciones(
         proyecto_id: Optional[int] = Query(None, description="Id del proyecto"),

@@ -94,8 +94,19 @@ python main.py
 2. Copiar `token_acceso`, pulsar **Authorize** (candado) y pegarlo.
 3. Con el administrador se crean los demás usuarios y roles (`POST /api/v1/usuarios`).
 
-Todas las respuestas usan el sobre estándar: `exito`, `codigo`, `mensaje`, `datos`, `errores` y
-`meta` (con `timestamp`, `version`, `peticion_id` y `paginacion`).
+### Formato de las respuestas
+Todas las respuestas tienen exactamente tres claves: `message`, `data` y `success`.
+
+```json
+{ "message": "Material registrado correctamente.", "data": { "material_id": "5", "nombre": "Cemento" }, "success": true }
+```
+
+- **Consulta paginada:** `data` trae `registros` (la lista) y `paginacion` (`pagina`, `por_pagina`,
+  `total_registros`, `total_paginas`).
+- **Error:** `success` es `false` y `data` trae `codigo` (catálogo de errores) y `errores`
+  (`campo`, `codigo`, `mensaje`, `regla`).
+- Cada respuesta trae el encabezado `X-Peticion-Id`, que permite encontrar en el log el detalle de un error.
+- `/health` es un chequeo técnico y responde como indica la guía de setup.
 
 ## Ciclo de una compra
 solicitud → comparativo de precios → cotización → enviar a aprobación → aprobar → orden de compra →

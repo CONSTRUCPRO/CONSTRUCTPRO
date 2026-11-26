@@ -39,7 +39,7 @@ class RolRepository:
 
     def listar(self, estado: Optional[str], pagina: int, por_pagina: int) -> tuple[list[Rol], int]:
         """
-        Roles de la página pedida y el total, para meta.paginacion. Se pagina en la BD (offset/limit).
+        Roles de la página pedida y el total, para data.paginacion. Se pagina en la BD (offset/limit).
         """
         consulta = select(Rol)
         if estado:

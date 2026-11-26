@@ -29,7 +29,7 @@ app = FastAPI(
 registrar_manejadores(app)
 
 
-# La ruta raíz responde con el sobre estándar (Componente F).
+# La ruta raíz responde con el sobre estándar (message, data, success).
 @app.get("/", tags=["Estado del servicio"], summary="Bienvenida")
 def raiz():
     """Ruta de bienvenida: confirma que la API está arriba e indica dónde está la documentación."""

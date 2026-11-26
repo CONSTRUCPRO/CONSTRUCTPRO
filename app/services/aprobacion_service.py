@@ -39,7 +39,7 @@ class AprobacionService:
     @staticmethod
     def _pagina(items: list[Aprobacion], total: int, pagina: int,
                 por_pagina: int) -> tuple[list[AprobacionResponse], dict]:
-        """Convierte una página de aprobaciones en respuestas con su meta.paginacion."""
+        """Convierte una página de aprobaciones en respuestas con su data.paginacion."""
         return ([AprobacionResponse.desde_modelo(a) for a in items],
                 construir_paginacion(pagina, por_pagina, total))
 
